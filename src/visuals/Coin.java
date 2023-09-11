@@ -13,7 +13,6 @@ public class Coin {
 	
 	private static final int NO_ANIMATION = -1;
 	private static final int DROP_ANIMATION = 0;
-	//	private static final int BLINK_ANIMATION = 1;
 	private static final int RESET_FALL_ANIMATION = 2;
 
 	private int animationState;
@@ -34,6 +33,7 @@ public class Coin {
 	private static final double STOP_ANIMATION_SPEED = 150;
 	private double speed;
 
+	// blink animation after a player won
 	private static final double BLINK_SWITCH_TIME = 0.125f;
 	private static double aktBlinkTime;
 	private static boolean swapBlink;
@@ -114,10 +114,6 @@ public class Coin {
 		speed += GRAVITY * tslf;
 	}
 
-	/**
-	 * This function sets the {@link #coinstate} of the coin and calls the function {@link #calcColor()}
-	 * @param player The current turn so if player one or player two drop this coin
-	 */
 	public void setState(int player) {
 		coinstate = player;
 		switch (coinstate) {
@@ -155,7 +151,7 @@ public class Coin {
 	}
 
 	/**
-	 * This function starts the reset-animation. Fall because all the coins start to fall down.
+	 * This function starts the reset-animation.
 	 */
 	public void startResetAnimation() {
 		animationState = RESET_FALL_ANIMATION;

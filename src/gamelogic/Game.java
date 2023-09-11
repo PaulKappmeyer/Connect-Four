@@ -33,7 +33,7 @@ public class Game {
 
 	// used for auto drop mode
 	private double timeSinceLastDrop;
-	private final double dropTime = 0.0;
+	private final double dropTime = 0.39;
 
 	private final int numRows;
 	private final int numColumns;
@@ -79,7 +79,7 @@ public class Game {
 		graphics.setColor(Color.BLACK);
 		graphics.drawString(numRows + "x" + numColumns + "-Grid", 10, 15);
 		
-		graphics.drawString("Turns played: " + movesPlayed, 10, TEXT_Y1);
+		graphics.drawString("Moves played: " + movesPlayed, 10, TEXT_Y1);
 
 		graphics.setColor(Color.RED);
 		graphics.drawString("Red score: " + redScore, 150, TEXT_Y1);

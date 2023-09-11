@@ -27,13 +27,6 @@ public abstract class GameBase {
 	public void start(String title, int width, int height) {
 		window = new Window(title, width, height);
 
-		//Adding inputManagers to window
-		//		window.addKeyListener(new KeyboardInputManager());
-		//		MouseInputManager mouseInputManager = new MouseInputManager(window);
-		//		window.addMouseListener(mouseInputManager);
-		//		window.addMouseMotionListener(mouseInputManager);
-		//		window.addMouseWheelListener(mouseInputManager);
-
 		long StartOfInit = System.currentTimeMillis();
 		init(); //Calling method init() in the sub-class
 		long StartOfGame = System.currentTimeMillis();
