@@ -22,7 +22,6 @@ public class Main extends GameBase {
 	
 	private static boolean gameSettingsChanged;
 
-	
 	private static Game game;
 
 	public static void main(String[] args) {

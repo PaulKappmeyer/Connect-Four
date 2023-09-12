@@ -11,14 +11,16 @@ import gamelogic.Main;
 
 public class Grid {
 
+	private static final boolean SHOW_ANIMATIONS = true;
+
 	private static final double WINDOW_HEIGHT_OF_GRID = 0.9 * Main.SCREEN_HEIGHT;
-	
+
 	public final double DROP_Y;
-	
+
 	private final int numRows;
 	private final int numColumns;
 	private final int numNeedForWin;
-	
+
 	private final double coinDiameter;
 	private final double xSpacing;
 	private final double ySpacing;
@@ -26,21 +28,18 @@ public class Grid {
 	private final double yOffset;
 
 	private final Area backgroundArea;
-	
+
 	private final Coin[][] coins;
-	private final int[] winningIndicesX;
-	private final int[] winningIndicesY;
 
 	private boolean showBlinkAnimation;
-	
-	
+
+
 	public Grid(int numRows, int numColumns, int numNeedForWin) {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
-		this.winningIndicesX = new int[numNeedForWin];
-		this.winningIndicesY = new int[numNeedForWin];
-		
+
+
 		double boundingBoxSize = Math.min(WINDOW_HEIGHT_OF_GRID / (double) numRows, Main.SCREEN_WIDTH / (double) numColumns);
 		this.coinDiameter = 0.95 * boundingBoxSize;
 		this.xSpacing = 0.05 * boundingBoxSize;
@@ -50,30 +49,30 @@ public class Grid {
 		this.DROP_Y = yOffset - coinDiameter;
 
 		this.backgroundArea = new Area(new Rectangle.Double(0, DROP_Y + coinDiameter/2, Main.SCREEN_WIDTH, numRows * (coinDiameter + xSpacing) + coinDiameter/2));
-		this.coins = new Coin[numColumns][numRows];
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				double xPos = i * (coinDiameter + xSpacing) + xOffset;
-				double yPos = j * (coinDiameter + ySpacing) + yOffset;
-				coins[i][j] = new Coin(xPos, yPos, coinDiameter, this);
+		this.coins = new Coin[numRows][numColumns];
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				double xPos = colInd * (coinDiameter + xSpacing) + xOffset;
+				double yPos = rowInd * (coinDiameter + ySpacing) + yOffset;
+				coins[rowInd][colInd] = new Coin(xPos, yPos, coinDiameter, this);
 				backgroundArea.subtract(new Area(new Ellipse2D.Double(xPos, yPos, coinDiameter, coinDiameter)));
 			}
 		}
 	}
 
 	public void initNewGame() {
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				coins[i][j].initNewGame();
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				coins[rowInd][colInd].initNewGame();
 			}
 		}
 	}
 
 	public void draw(Graphics graphics) {		
 		// draw coins and cut out spaces
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				Coin coin = coins[i][j];
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				Coin coin = coins[rowInd][colInd];
 				coin.draw(graphics);
 			}
 		}
@@ -85,15 +84,15 @@ public class Grid {
 	}
 
 	public void update(double tslf) {
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				Coin coin = coins[i][j];
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				Coin coin = coins[rowInd][colInd];
 				coin.update(tslf);
 
 				// check collision
-				if (j >= 1) {
-					Coin above = coins[i][j-1];
-					
+				if (rowInd >= 1) {
+					Coin above = coins[rowInd-1][colInd];
+
 					checkCollision(coin, above);
 				}
 			}
@@ -105,7 +104,7 @@ public class Grid {
 
 	private void checkCollision(Coin coin1, Coin coin2) {
 		// early exit: both coins have to be falling
-		if (!coin1.isInDropAnimation() || !coin2.isInDropAnimation()) {
+		if (coin1.isInDropAnimation() == false || coin2.isInDropAnimation() == false) {
 			return;
 		}
 
@@ -128,130 +127,37 @@ public class Grid {
 			coin2.setSpeed(coin1Speed);
 		}
 	}
-	
+
 	/**
 	 * This function starts the reset-animation with start the fall of the coins and stop the blinking
 	 */
 	public void startResetAnimation() {
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				coins[i][j].startResetAnimation();
-			}
-		}
-		setBlinkAnimation(false);
-	}
-
-
-	/**
-	 * Checks if the current turn relates into a win for the current player
-	 * @param player the color to check a win for, often it is the color of the current turn
-	 * @return true if the current player has won, false if not
-	 */
-	public boolean checkForWin(int player, int numNeedForWin) {
-		// Check for horizontal row
-		for (int startY = 0; startY < numRows; startY++) {
-			outer: for (int startX = 0; startX <= numColumns - numNeedForWin; startX++) {
-				// clear arrays
-				clearWinningIndicesArray();
-				
-				for (int xOff = 0; xOff < numNeedForWin; xOff++) {
-					int xInd = startX + xOff;
-					if (coins[xInd][startY].getState() != player) {
-						continue outer;
-					}
-					
-					winningIndicesX[xOff] = xInd;
-					winningIndicesY[xOff] = startY;
+		if (SHOW_ANIMATIONS) {
+			for (int colInd = 0; colInd < numColumns; colInd++) {
+				for (int rowInd = 0; rowInd < numRows; rowInd++) {
+					coins[rowInd][colInd].startResetAnimation();
 				}
-				
-				return true;
-			}
+			}			
 		}
-		
-		// Check for vertical row
-		for (int startX = 0; startX < numColumns; startX++) {
-			outer: for (int startY = 0; startY <= numRows - numNeedForWin; startY++) {
-				// clear arrays
-				clearWinningIndicesArray();
-				
-				for (int yOff = 0; yOff < numNeedForWin; yOff++) {
-					int yInd = startY + yOff;
-					if (coins[startX][yInd].getState() != player) {
-						continue outer;
-					}
-					
-					winningIndicesX[yOff] = startX;
-					winningIndicesY[yOff] = yInd;
-				}
-				return true;
-			}
-		}
-		
-		// Check for diagonal row: down and right
-		for (int startX = 0; startX <= numColumns - numNeedForWin; startX++) {
-			outer: for (int startY = 0; startY <= numRows - numNeedForWin; startY++) {
-				// clear arrays
-				clearWinningIndicesArray();
-				
-				for (int off = 0; off < numNeedForWin; off++) {
-					int xInd = startX + off;
-					int yInd = startY + off;
-					if (coins[xInd][yInd].getState() != player) {
-						continue outer;
-					}
-					
-					winningIndicesX[off] = xInd;
-					winningIndicesY[off] = yInd;
-				}
-				return true;
-			}
-		}
-		
-		// Check for diagonal row: up and right
-		for (int startX = 0; startX <= numColumns - numNeedForWin; startX++) {
-			outer: for (int startY = 0; startY <= numRows - numNeedForWin; startY++) {
-				// clear arrays
-				clearWinningIndicesArray();
-				
-				for (int off = 0; off < numNeedForWin; off++) {
-					int xInd = startX + off;
-					int yInd = startY + (numNeedForWin - 1) - off;
-					if (coins[xInd][yInd].getState() != player) {
-						continue outer;
-					}
-					
-					winningIndicesX[off] = xInd;
-					winningIndicesY[off] = yInd;
-				}
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	private void clearWinningIndicesArray() {
-		for (int i = 0; i < numNeedForWin; i++) {
-			winningIndicesX[i] = -1;
-			winningIndicesY[i] = -1;
-		}
+		stopBlinkAnimation();
 	}
 
 	/**
 	 * This function calculates which coins need the blink after one player has won
 	 * @param blink true if the coins should blink, false if they should not blink
 	 */
-	public void setBlinkAnimation(boolean blink) {
-		this.showBlinkAnimation = blink;
+	public void startBlinkAnimation(int[] rowIndices, int[] colIndices) {
+		showBlinkAnimation = true;
 		for (int i = 0; i < numNeedForWin; i++) {
-			int xInd = winningIndicesX[i];
-			int yInd = winningIndicesY[i];
-			
-			if (xInd == -1 || yInd == -1) {
-				continue;
-			}
+			coins[rowIndices[i]][colIndices[i]].setBlink(true);
+		}
+	}
 
-			coins[xInd][yInd].setBlink(blink);
+	public void stopBlinkAnimation() {
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				coins[rowInd][colInd].setBlink(false);
+			}
 		}
 	}
 
@@ -260,9 +166,9 @@ public class Grid {
 	 * @return true if any coin is in drop-animation, false if not
 	 */
 	public boolean isAnyCoinInDropAnimation() {
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				if (coins[i][j].isInDropAnimation()) {
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				if (coins[rowInd][colInd].isInDropAnimation()) {
 					return true;
 				}
 			}
@@ -275,9 +181,9 @@ public class Grid {
 	 * @return true if any coin is in reset-animation, false if not
 	 */
 	public boolean isAnyCoinInResetAnimation() {
-		for (int i = 0; i < numColumns; i++) {
-			for (int j = 0; j < numRows; j++) {
-				if (coins[i][j].isInResetAnimation()) {
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			for (int rowInd = 0; rowInd < numRows; rowInd++) {
+				if (coins[rowInd][colInd].isInResetAnimation()) {
 					return true;
 				}
 			}
@@ -285,13 +191,16 @@ public class Grid {
 		return false;
 	}
 
-	public int getState(int x, int y) {
-		return coins[x][y].getState();
+	public int getState(int rowInd, int colInd) {
+		return coins[rowInd][colInd].getState();
 	}
 
-	public void setState(int x, int y, int state) {
-		coins[x][y].setState(state);
-		coins[x][y].startDropAnimation();
+	public void setState(int rowInd, int colInd, int state) {
+		coins[rowInd][colInd].setState(state);
+
+		if (SHOW_ANIMATIONS) {
+			coins[rowInd][colInd].startDropAnimation();
+		}
 	}
 
 	public Coin[][] getCoins() {

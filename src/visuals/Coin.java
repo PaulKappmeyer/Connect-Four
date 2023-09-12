@@ -3,13 +3,10 @@ package visuals;
 import java.awt.Color;
 import java.awt.Graphics;
 
+import gamelogic.Gamelogic;
 import gamelogic.Main;
 
 public class Coin {
-
-	public static final int NOT_DROPPED = 0;
-	public static final int RED = 1;
-	public static final int YELLOW = -1;
 	
 	private static final int NO_ANIMATION = -1;
 	private static final int DROP_ANIMATION = 0;
@@ -42,7 +39,7 @@ public class Coin {
 	private Grid grid;
 
 	public Coin(double targetX, double targetY, double diameter, Grid grid) {
-		this.coinstate = NOT_DROPPED;
+		this.coinstate = Gamelogic.NOT_DROPPED;
 		this.targetX = targetX;
 		this.targetY = targetY;
 		this.diameter = diameter;
@@ -52,13 +49,13 @@ public class Coin {
 	}
 
 	public void initNewGame() {
-		coinstate = NOT_DROPPED;
+		coinstate = Gamelogic.NOT_DROPPED;
 		animationState = NO_ANIMATION;
 		currentY = targetY;
 	}
 
 	public void draw(Graphics graphics) {
-		if (coinstate == NOT_DROPPED) {
+		if (coinstate == Gamelogic.NOT_DROPPED) {
 			return;
 		}
 
@@ -117,10 +114,10 @@ public class Coin {
 	public void setState(int player) {
 		coinstate = player;
 		switch (coinstate) {
-		case RED:
+		case Gamelogic.RED:
 			color = Color.RED;
 			break;
-		case YELLOW:
+		case Gamelogic.YELLOW:
 			color = Color.YELLOW;
 			break;
 		default:

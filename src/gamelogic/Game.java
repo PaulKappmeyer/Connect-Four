@@ -1,14 +1,14 @@
 package gamelogic;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Random;
 
 import visuals.Coin;
 import visuals.Grid;
+import visuals.InfoText;
 
 public class Game {
-
+	
 	private Grid grid;
 
 	public static final int TWO_PLAYER_MODE = 0;
@@ -18,34 +18,29 @@ public class Game {
 	private int gamemode;
 
 	private static final int PLAYING = 0;
-	private static final int GAME_ENDED = 1;
+	private static final int MATCH_ENDED = 1;
 	private static final int READY_FOR_RESET = 2;
 	private static final int IN_RESET_ANIMATION = 3;
 
 	private int gamestate;
 
-	private int numOfGamesPlayed;
-	private int numOfDraws;
-	private int redScore;
-	private int yellowScore;
-	private int currentPlayer;
-	private int movesPlayed;
-
 	// used for auto drop mode
 	private double timeSinceLastDrop;
-	private final double dropTime = 0.39;
-
-	private final int numRows;
-	private final int numColumns;
-	private final int numNeedForWin;
+	private final double dropTime = 0.1;
+	
+	private Gamelogic gamelogic;
+	
+	private InfoText infoText;
 	
 	public Game(int numRows, int numColumns, int numNeedForWin) {
-		grid = new Grid(numRows, numColumns, numNeedForWin);
-		this.numRows = numRows;
-		this.numColumns = numColumns;
-		this.numNeedForWin = numNeedForWin;
+		gamelogic = new Gamelogic(numRows, numColumns, numNeedForWin);
 		gamemode = TWO_PLAYER_MODE;
 		gamestate = PLAYING;
+		
+		grid = new Grid(numRows, numColumns, numNeedForWin);
+		
+		infoText = new InfoText(this);
+		
 		initNewGame();
 	}
 
@@ -53,77 +48,21 @@ public class Game {
 	 * This function starts a new game with the current player being red
 	 */
 	private void initNewGame() {
+		gamelogic.initNewGame();
 		grid.initNewGame();
 		gamestate = PLAYING;
-		movesPlayed = 0;
-		currentPlayer = Coin.RED;
 	}
-
-
 
 	public void draw(Graphics graphics) {
 		grid.draw(graphics);
 
 		// draw text
-		drawInfoText(graphics);
-	}
-
-	private static final int TEXT_Y1 = (int) (0.94 * Main.SCREEN_HEIGHT);
-	private static final int TEXT_Y2 = (int) (0.96 * Main.SCREEN_HEIGHT);
-	private static final int TEXT_Y3 = (int) (0.98 * Main.SCREEN_HEIGHT);
-	
-	private static final String INFO_TEXT2 = "Use mouseclicks or keys 0-9 to drop your tokens. Hit 'Enter' to start a new game. Press 'T' to toggle the automatic drop mode. Press 'S' to toggle the singleplayer mode and play against a (very bad) computer.";
-	private static final String INFO_TEXT3 = "Use the arrow keys to change the size of the board. Use the '+' and '-' key to change the number of tokens in a row required for a win."; 
-	
-	private void drawInfoText(Graphics graphics) {
-		graphics.setColor(Color.BLACK);
-		graphics.drawString(numRows + "x" + numColumns + "-Grid", 10, 15);
-		
-		graphics.drawString("Moves played: " + movesPlayed, 10, TEXT_Y1);
-
-		graphics.setColor(Color.RED);
-		graphics.drawString("Red score: " + redScore, 150, TEXT_Y1);
-
-		graphics.setColor(Color.ORANGE);
-		graphics.drawString("Yellow score: " + yellowScore, 250, TEXT_Y1);
-
-		graphics.setColor(Color.BLACK);
-		graphics.drawString("Number of draws: " + numOfDraws, 400, TEXT_Y1);
-		graphics.drawString("Number of games played: " + numOfGamesPlayed, 550, TEXT_Y1);
-		switch (currentPlayer) {
-		case Coin.YELLOW:
-			graphics.setColor(Color.ORANGE);
-			graphics.drawString("Current Player: Yellow", 750, TEXT_Y1);
-			break;
-
-		case Coin.RED:
-			graphics.setColor(Color.RED);
-			graphics.drawString("Current Player: Red", 750, TEXT_Y1);
-
-		}
-
-		graphics.setColor(Color.BLACK);
-		switch (gamemode) {
-		case TWO_PLAYER_MODE:
-			graphics.drawString("Current gamemode: player vs. player", 900, TEXT_Y1);
-			break;
-
-		case AUTO_DROP_MODE:
-			graphics.drawString("Current gamemode: automatic drop", 900, TEXT_Y1);
-			break;
-
-		case SINGLEPLAYER_MODE:
-			graphics.drawString("Current gamemode: player vs. computer", 900, TEXT_Y1);
-			break;
-		}
-
-		graphics.drawString(INFO_TEXT2, 10, TEXT_Y2);
-		graphics.drawString(INFO_TEXT3, 10, TEXT_Y3);
+		infoText.draw(graphics);
 	}
 
 	public void update(double tslf) {
 		grid.update(tslf);
-
+		
 		switch (gamestate) {
 		case PLAYING:
 			switch (gamemode) {
@@ -135,7 +74,7 @@ public class Game {
 				break;
 
 			case SINGLEPLAYER_MODE:
-				if (currentPlayer == Coin.YELLOW) {
+				if (gamelogic.getCurrentPlayer() == Gamelogic.YELLOW) {
 					updateAutomaticDrop(tslf);
 				}
 
@@ -143,8 +82,8 @@ public class Game {
 			}
 			break;
 
-		case GAME_ENDED:
-			if (!grid.isAnyCoinInDropAnimation()) {
+		case MATCH_ENDED:
+			if (grid.isAnyCoinInDropAnimation() == false) {
 				gamestate = READY_FOR_RESET;
 			}
 			break;
@@ -157,19 +96,25 @@ public class Game {
 			break;
 
 		case IN_RESET_ANIMATION:
-			if (!grid.isAnyCoinInResetAnimation()) {
+			if (grid.isAnyCoinInResetAnimation() == false) {
 				initNewGame();
 			}
 			break;
 		}
 	}
 
+	private static final Random rand = new Random();
+	
 	private void updateAutomaticDrop(double tslf) {
 		timeSinceLastDrop += tslf;
 		if (timeSinceLastDrop > dropTime) {
 			timeSinceLastDrop -= dropTime;
 
-			dropCoin(new Random().nextInt(numColumns));
+			int columnIndex = -1; 
+			while (gamelogic.isPossibleMove(columnIndex) == false) {
+				columnIndex = rand.nextInt(gamelogic.getNumOfColumns());
+			}
+			dropCoin(columnIndex);
 		}
 	}
 
@@ -187,84 +132,44 @@ public class Game {
 			return;
 		}
 
-		if (columnIndex < 0 || columnIndex > numColumns-1) {
-			return; // throw new ArrayIndexOutOfBoundsException("index bellow zero or out of allow range:" + (columns-1));
-		}
-
-		int freeRowIndex = -1;
-		for (int y = numRows - 1; y >= 0; y--) {
-			if (grid.getState(columnIndex, y) == Coin.NOT_DROPPED) {
-				freeRowIndex = y;
-				break;
-			}
-		}
-		if (freeRowIndex == -1) {
-			return; // throw new ArrayIndexOutOfBoundsException("No coin can be placed because the column is full");
-		}
-
-
-		// increment number of moves played
-		movesPlayed++;
-		// updated grid
-		grid.setState(columnIndex, freeRowIndex, currentPlayer);
-
-		// check for win
-		if (grid.checkForWin(currentPlayer, numNeedForWin)) {
-			// increment points
-			switch (currentPlayer) {
-			case Coin.RED:
-				redScore++;
-				break;
+		int[] returnMsg = gamelogic.doMove(columnIndex);
+		switch (returnMsg[0]) {
+		case Gamelogic.INVALID_MOVE:
+			return;
+			
+		case Gamelogic.VALID_MOVE:
+			// updated grid
+			int rowInd = returnMsg[1]; 
+			int colInd = returnMsg[2]; 
+			int currentPlayer = returnMsg[3];
+			grid.setState(rowInd, colInd, currentPlayer);
+			
+			// game won or draw?
+			if (gamelogic.isGameFinished()) {
+				gamestate = MATCH_ENDED;
 				
-			case Coin.YELLOW:
-				yellowScore++;
-				break;
+				
+				// draw?
+				if (gamelogic.isGameFinishedInDraw()) {
+					return;
+				} else {
+					grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
+				}
 			}
-			// start blinking animation of 'winning' coins
-			grid.setBlinkAnimation(true);
-			gamestate = GAME_ENDED;
-			numOfGamesPlayed++;
-			return;
 		}
-
-		// check for draw
-		if (movesPlayed == numColumns * numRows) {
-			gamestate = GAME_ENDED;
-			numOfGamesPlayed++;
-			numOfDraws++;
-			return;
-		}
-
-		// switch current player
-		switchPlayer();
 	}
 
 	public int mouseXToColumnIndex(int mouseX) {
-		for (int i = 0; i < numColumns; i++) {
-			Coin coin = grid.getCoins()[i][0];
+		for (int colInd = 0; colInd < gamelogic.getNumOfColumns(); colInd++) {
+			Coin coin = grid.getCoins()[0][colInd];
 			double x1 = coin.getTargetX();
 			double x2 = coin.getTargetX() + coin.getDiameter();
 
 			if (mouseX > x1 && mouseX < x2) {
-				return i;
+				return colInd;
 			}
 		}
 		return -1;
-	}
-
-	/**
-	 * Switches the current player
-	 */
-	private void switchPlayer() {
-		switch (currentPlayer) {
-		case Coin.RED:
-			currentPlayer = Coin.YELLOW;
-			break;
-			
-		case Coin.YELLOW:
-			currentPlayer = Coin.RED;
-			break;
-		}
 	}
 
 	public boolean isReadyForReset() {
@@ -304,6 +209,10 @@ public class Game {
 	}
 
 	public int getCurrentPlayer() {
-		return currentPlayer;
+		return gamelogic.getCurrentPlayer();
+	}
+	
+	public Gamelogic getGamelogic() {
+		return gamelogic;
 	}
 }

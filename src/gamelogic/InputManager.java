@@ -5,8 +5,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-import visuals.Coin;
-
 public class InputManager implements KeyListener, MouseListener{
 
 	@Override
@@ -25,7 +23,7 @@ public class InputManager implements KeyListener, MouseListener{
 			break;
 
 		case Game.SINGLEPLAYER_MODE:
-			if (game.getCurrentPlayer() == Coin.RED) {
+			if (game.getCurrentPlayer() == Gamelogic.RED) {
 				checkDroppingKeys(keyCode);
 			}
 			break;
@@ -147,7 +145,7 @@ public class InputManager implements KeyListener, MouseListener{
 			break;
 
 		case Game.SINGLEPLAYER_MODE:
-			if (game.getCurrentPlayer() == Coin.RED) {
+			if (game.getCurrentPlayer() == Gamelogic.RED) {
 				game.dropCoin(game.mouseXToColumnIndex(mouseX));
 			}
 		}
