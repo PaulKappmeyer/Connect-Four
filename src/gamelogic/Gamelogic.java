@@ -16,6 +16,7 @@ public class Gamelogic {
 	private int numNeedForWin;
 	private int[][] states;
 
+	private boolean[] possibleMoves;
 	private int[] rowDropIndices;
 
 	private int[] winningRowIndices;
@@ -38,8 +39,10 @@ public class Gamelogic {
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
 		this.states = new int[numRows][numColumns];
+		this.possibleMoves = new boolean[numColumns];
 		this.rowDropIndices = new int[numColumns];
 		for (int i = 0; i < numColumns; i++) {
+			possibleMoves[i] = true;
 			rowDropIndices[i] = numRows - 1;
 		}
 		this.winningRowIndices = new int[numNeedForWin];
@@ -55,6 +58,7 @@ public class Gamelogic {
 			}
 		}
 		for (int i = 0; i < numColumns; i++) {
+			possibleMoves[i] = true;
 			rowDropIndices[i] = numRows - 1;
 		}
 		movesPlayed = 0;
@@ -79,7 +83,10 @@ public class Gamelogic {
 
 		// decrement the row dropping index
 		rowDropIndices[columnIndex] --;
-
+		if (rowDropIndices[columnIndex] < 0) {
+			possibleMoves[columnIndex] = false;
+		}
+		
 		// early exit: don't need to check for win or draw if not enough moves played
 		if (movesPlayed < 2 * numNeedForWin - 1) {
 			// switch current player
@@ -126,6 +133,10 @@ public class Gamelogic {
 		return returnMsg;
 	}
 
+	public boolean[] getPossibleMoves() {
+		return possibleMoves;
+	}
+	
 	public int[] getRowDropIndices() {
 		return rowDropIndices.clone();
 	}
@@ -134,7 +145,7 @@ public class Gamelogic {
 		if (columnIndex < 0 || columnIndex >= numColumns) {
 			return false;
 		}
-		return rowDropIndices[columnIndex] >= 0;
+		return possibleMoves[columnIndex];
 	}
 	
 	public int[][] getStates(){
