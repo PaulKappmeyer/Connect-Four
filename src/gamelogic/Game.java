@@ -26,20 +26,26 @@ public class Game {
 
 	// used for auto drop mode
 	private double timeSinceLastDrop;
-	private final double dropTime = 0.1;
+	private final double dropTime = 0.75;
 	
 	private Gamelogic gamelogic;
 	
 	private InfoText infoText;
+	
+	private static final Random rand = new Random();
+	private Bot bot;
 	
 	public Game(int numRows, int numColumns, int numNeedForWin) {
 		gamelogic = new Gamelogic(numRows, numColumns, numNeedForWin);
 		gamemode = TWO_PLAYER_MODE;
 		gamestate = PLAYING;
 		
+		// visuals
 		grid = new Grid(numRows, numColumns, numNeedForWin);
-		
 		infoText = new InfoText(this);
+		
+		// computer AI
+		bot = new Bot(gamelogic);
 		
 		initNewGame();
 	}
@@ -70,14 +76,27 @@ public class Game {
 				break;
 
 			case AUTO_DROP_MODE:
-				updateAutomaticDrop(tslf);
+				timeSinceLastDrop += tslf;
+				if (timeSinceLastDrop > dropTime) {
+					timeSinceLastDrop -= dropTime;
+
+					int columnIndex = -1; 
+					while (gamelogic.isPossibleMove(columnIndex) == false) {
+						columnIndex = rand.nextInt(gamelogic.getNumOfColumns());
+					}
+					dropCoin(columnIndex);
+				}
 				break;
 
 			case SINGLEPLAYER_MODE:
 				if (gamelogic.getCurrentPlayer() == Gamelogic.YELLOW) {
-					updateAutomaticDrop(tslf);
-				}
+					timeSinceLastDrop += tslf;
+					if (timeSinceLastDrop > dropTime) {
+						timeSinceLastDrop -= dropTime;
 
+						dropCoin(bot.getNextMove());
+					}
+				}
 				break;
 			}
 			break;
@@ -100,21 +119,6 @@ public class Game {
 				initNewGame();
 			}
 			break;
-		}
-	}
-
-	private static final Random rand = new Random();
-	
-	private void updateAutomaticDrop(double tslf) {
-		timeSinceLastDrop += tslf;
-		if (timeSinceLastDrop > dropTime) {
-			timeSinceLastDrop -= dropTime;
-
-			int columnIndex = -1; 
-			while (gamelogic.isPossibleMove(columnIndex) == false) {
-				columnIndex = rand.nextInt(gamelogic.getNumOfColumns());
-			}
-			dropCoin(columnIndex);
 		}
 	}
 

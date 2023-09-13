@@ -61,18 +61,17 @@ public class Grid {
 	}
 
 	public void initNewGame() {
-		for (int colInd = 0; colInd < numColumns; colInd++) {
-			for (int rowInd = 0; rowInd < numRows; rowInd++) {
-				coins[rowInd][colInd].initNewGame();
+		for (Coin[] coinRow : coins) {
+			for (Coin coin : coinRow) {
+				coin.initNewGame();
 			}
 		}
 	}
 
 	public void draw(Graphics graphics) {		
 		// draw coins and cut out spaces
-		for (int colInd = 0; colInd < numColumns; colInd++) {
-			for (int rowInd = 0; rowInd < numRows; rowInd++) {
-				Coin coin = coins[rowInd][colInd];
+		for (Coin[] coinRow : coins) {
+			for (Coin coin : coinRow) {
 				coin.draw(graphics);
 			}
 		}
@@ -133,9 +132,9 @@ public class Grid {
 	 */
 	public void startResetAnimation() {
 		if (SHOW_ANIMATIONS) {
-			for (int colInd = 0; colInd < numColumns; colInd++) {
-				for (int rowInd = 0; rowInd < numRows; rowInd++) {
-					coins[rowInd][colInd].startResetAnimation();
+			for (Coin[] coinRow : coins) {
+				for (Coin coin : coinRow) {
+					coin.startResetAnimation();
 				}
 			}			
 		}
@@ -154,9 +153,9 @@ public class Grid {
 	}
 
 	public void stopBlinkAnimation() {
-		for (int colInd = 0; colInd < numColumns; colInd++) {
-			for (int rowInd = 0; rowInd < numRows; rowInd++) {
-				coins[rowInd][colInd].setBlink(false);
+		for (Coin[] coinRow : coins) {
+			for (Coin coin : coinRow) {
+				coin.setBlink(false);
 			}
 		}
 	}
@@ -166,9 +165,9 @@ public class Grid {
 	 * @return true if any coin is in drop-animation, false if not
 	 */
 	public boolean isAnyCoinInDropAnimation() {
-		for (int colInd = 0; colInd < numColumns; colInd++) {
-			for (int rowInd = 0; rowInd < numRows; rowInd++) {
-				if (coins[rowInd][colInd].isInDropAnimation()) {
+		for (Coin[] coinRow : coins) {
+			for (Coin coin : coinRow) {
+				if (coin.isInDropAnimation()) {
 					return true;
 				}
 			}
@@ -181,9 +180,9 @@ public class Grid {
 	 * @return true if any coin is in reset-animation, false if not
 	 */
 	public boolean isAnyCoinInResetAnimation() {
-		for (int colInd = 0; colInd < numColumns; colInd++) {
-			for (int rowInd = 0; rowInd < numRows; rowInd++) {
-				if (coins[rowInd][colInd].isInResetAnimation()) {
+		for (Coin[] coinRow : coins) {
+			for (Coin coin : coinRow) {
+				if (coin.isInResetAnimation()) {
 					return true;
 				}
 			}

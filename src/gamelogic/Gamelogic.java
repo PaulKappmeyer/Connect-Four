@@ -1,5 +1,7 @@
 package gamelogic;
 
+import java.util.Arrays;
+
 public class Gamelogic {
 
 	public static final int INVALID_MOVE = -1;
@@ -16,8 +18,8 @@ public class Gamelogic {
 
 	private int[] rowDropIndices;
 
-	private final int[] winningRowIndices;
-	private final int[] winningColIndices;
+	private int[] winningRowIndices;
+	private int[] winningColIndices;
 
 	private int currentPlayer;
 
@@ -40,8 +42,8 @@ public class Gamelogic {
 		for (int i = 0; i < numColumns; i++) {
 			rowDropIndices[i] = numRows - 1;
 		}
-		this.winningColIndices = new int[numNeedForWin];
 		this.winningRowIndices = new int[numNeedForWin];
+		this.winningColIndices = new int[numNeedForWin];
 		this.currentPlayer = RED;
 	}
 
@@ -87,10 +89,16 @@ public class Gamelogic {
 		}
 
 		// check for win
-		if (checkForWin(currentPlayer, numNeedForWin)) {
+		Object[] checkForWinInfo = checkForWin(states, currentPlayer, numNeedForWin);
+		boolean hasWon = (boolean) checkForWinInfo[0];
+		if (hasWon) {
 			// set game finished
 			gameFinished = true;
 			winningPlayer = currentPlayer;
+			// set blink animation indices
+			winningRowIndices = (int[]) checkForWinInfo[1];
+			winningColIndices = (int[]) checkForWinInfo[2];
+			
 			// increment points
 			switch (currentPlayer) {
 			case RED:
@@ -118,11 +126,19 @@ public class Gamelogic {
 		return returnMsg;
 	}
 
+	public int[] getRowDropIndices() {
+		return rowDropIndices.clone();
+	}
+	
 	public boolean isPossibleMove(int columnIndex) {
 		if (columnIndex < 0 || columnIndex >= numColumns) {
 			return false;
 		}
 		return rowDropIndices[columnIndex] >= 0;
+	}
+	
+	public int[][] getStates(){
+		return Arrays.stream(states).map(int[]::clone).toArray(int[][]::new);
 	}
 
 	public boolean isGameFinished() {
@@ -157,12 +173,17 @@ public class Gamelogic {
 	 * @param player the color to check a win for, often it is the color of the current turn
 	 * @return true if the current player has won, false if not
 	 */
-	public boolean checkForWin(int player, int numNeedForWin) {
+	public static Object[] checkForWin(int[][] states, int player, int numNeedForWin) {
+		int numRows = states.length;
+		int numColumns = states[0].length;
+		int[] winningRowIndices = new int[numNeedForWin];
+		int[] winningColIndices = new int[numNeedForWin];
+
 		// Check for horizontal row
 		for (int rowInd = 0; rowInd < numRows; rowInd++) {
 			outer: for (int colInd = 0; colInd <= numColumns - numNeedForWin; colInd++) {
 				// clear arrays
-				clearWinningIndicesArray();
+				clearWinningIndicesArray(winningRowIndices, winningColIndices, numNeedForWin);
 
 				for (int off = 0; off < numNeedForWin; off++) {
 					int newColInd = colInd + off;
@@ -174,7 +195,7 @@ public class Gamelogic {
 					winningColIndices[off] = newColInd;
 				}
 
-				return true;
+				return new Object[] {true, winningRowIndices, winningColIndices};
 			}
 		}
 
@@ -182,7 +203,7 @@ public class Gamelogic {
 		for (int colInd = 0; colInd < numColumns; colInd++) {
 			outer: for (int rowInd = 0; rowInd <= numRows - numNeedForWin; rowInd++) {
 				// clear arrays
-				clearWinningIndicesArray();
+				clearWinningIndicesArray(winningRowIndices, winningColIndices, numNeedForWin);
 
 				for (int off = 0; off < numNeedForWin; off++) {
 					int newRowInd = rowInd + off;
@@ -193,7 +214,7 @@ public class Gamelogic {
 					winningRowIndices[off] = newRowInd;
 					winningColIndices[off] = colInd;
 				}
-				return true;
+				return new Object[] {true, winningRowIndices, winningColIndices};
 			}
 		}
 
@@ -201,7 +222,7 @@ public class Gamelogic {
 		for (int colInd = 0; colInd <= numColumns - numNeedForWin; colInd++) {
 			outer: for (int rowInd = 0; rowInd <= numRows - numNeedForWin; rowInd++) {
 				// clear arrays
-				clearWinningIndicesArray();
+				clearWinningIndicesArray(winningRowIndices, winningColIndices, numNeedForWin);
 
 				for (int off = 0; off < numNeedForWin; off++) {
 					int newRowInd = rowInd + off;
@@ -213,7 +234,7 @@ public class Gamelogic {
 					winningRowIndices[off] = newRowInd;
 					winningColIndices[off] = newColInd;
 				}
-				return true;
+				return new Object[] {true, winningRowIndices, winningColIndices};
 			}
 		}
 
@@ -221,7 +242,7 @@ public class Gamelogic {
 		for (int colInd = 0; colInd <= numColumns - numNeedForWin; colInd++) {
 			outer: for (int rowInd = 0; rowInd <= numRows - numNeedForWin; rowInd++) {
 				// clear arrays
-				clearWinningIndicesArray();
+				clearWinningIndicesArray(winningRowIndices, winningColIndices, numNeedForWin);
 
 				for (int off = 0; off < numNeedForWin; off++) {
 					int newRowInd = rowInd + (numNeedForWin - 1) - off;
@@ -234,16 +255,14 @@ public class Gamelogic {
 					winningRowIndices[off] = newRowInd;
 					winningColIndices[off] = newColInd;
 				}
-				return true;
+				return new Object[] {true, winningRowIndices, winningColIndices};
 			}
 		}
-
-		// clear arrays
-		clearWinningIndicesArray();
-		return false;
+		
+		return new Object[] {false, winningRowIndices, winningColIndices};
 	}
 
-	private void clearWinningIndicesArray() {
+	private static void clearWinningIndicesArray(int[] winningRowIndices, int[] winningColIndices, int numNeedForWin) {
 		for (int i = 0; i < numNeedForWin; i++) {
 			winningRowIndices[i] = -1;
 			winningColIndices[i] = -1;
@@ -259,14 +278,23 @@ public class Gamelogic {
 	}
 
 	public void printBoard() {
-		for (int rowInd = 0; rowInd < numRows; rowInd++) {
-			for (int colInd = 0; colInd < numColumns; colInd++) {
-				System.out.printf("%3d", states[rowInd][colInd]);
+		printBoard(states);
+	}
+	
+	public static void printBoard(int[][] states) {
+		for (int[] stateRow : states) {
+			for (int state : stateRow) {
+				System.out.printf("%3d", state);
 			}
 			System.out.println();
 		}
+		System.out.println();
 	}
 
+	public int getNumNeedForWin() {
+		return numNeedForWin;
+	}
+	
 	public int getNumOfColumns() {
 		return numColumns;
 	}
