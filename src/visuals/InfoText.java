@@ -17,29 +17,27 @@ public class InfoText {
 	private static final String INFO_TEXT3 = "Use the arrow keys to change the size of the board. Use the '+' and '-' key to change the number of tokens in a row required for a win."; 
 	
 	private Game game;
-	private Gamelogic gamelogic;
 	
 	public InfoText(Game game) {
 		this.game = game;
-		this.gamelogic = game.getGamelogic();
 	}
 	
 	public void draw(Graphics graphics) {
 		graphics.setColor(Color.BLACK);
 		graphics.drawString(Main.getNumRows() + "x" + Main.getNumColumns() + "-Grid", 10, 15);
 		
-		graphics.drawString("Moves played: " + gamelogic.getNumOfMovesPlayed(), 10, TEXT_Y1);
+		graphics.drawString("Moves played: " + game.getNumOfMovesPlayed(), 10, TEXT_Y1);
 
 		graphics.setColor(Color.RED);
-		graphics.drawString("Red score: " + gamelogic.getRedScore(), 150, TEXT_Y1);
+		graphics.drawString("Red score: " + game.getRedScore(), 150, TEXT_Y1);
 
 		graphics.setColor(Color.ORANGE);
-		graphics.drawString("Yellow score: " + gamelogic.getYellowScore(), 250, TEXT_Y1);
+		graphics.drawString("Yellow score: " + game.getYellowScore(), 250, TEXT_Y1);
 
 		graphics.setColor(Color.BLACK);
-		graphics.drawString("Number of draws: " + gamelogic.getNumOfDraws(), 400, TEXT_Y1);
-		graphics.drawString("Number of games played: " + gamelogic.getNumOfGamesPlayed(), 550, TEXT_Y1);
-		switch (gamelogic.getCurrentPlayer()) {
+		graphics.drawString("Number of draws: " + game.getNumOfDraws(), 400, TEXT_Y1);
+		graphics.drawString("Number of games played: " + game.getNumOfGamesPlayed(), 550, TEXT_Y1);
+		switch (game.getCurrentPlayer()) {
 		case Gamelogic.YELLOW:
 			graphics.setColor(Color.ORANGE);
 			graphics.drawString("Current Player: Yellow", 750, TEXT_Y1);

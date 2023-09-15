@@ -76,34 +76,34 @@ public class InputManager implements KeyListener, MouseListener{
 		
 		switch (keyCode) {
 		case KeyEvent.VK_1:
-			game.dropCoin(0);
+			game.doMove(0);
 			break;
 		case KeyEvent.VK_2:
-			game.dropCoin(1);
+			game.doMove(1);
 			break;
 		case KeyEvent.VK_3:
-			game.dropCoin(2);
+			game.doMove(2);
 			break;
 		case KeyEvent.VK_4:
-			game.dropCoin(3);
+			game.doMove(3);
 			break;
 		case KeyEvent.VK_5:
-			game.dropCoin(4);
+			game.doMove(4);
 			break;
 		case KeyEvent.VK_6:
-			game.dropCoin(5);
+			game.doMove(5);
 			break;
 		case KeyEvent.VK_7:
-			game.dropCoin(6);
+			game.doMove(6);
 			break;
 		case KeyEvent.VK_8:
-			game.dropCoin(7);
+			game.doMove(7);
 			break;
 		case KeyEvent.VK_9:
-			game.dropCoin(8);
+			game.doMove(8);
 			break;
 		case KeyEvent.VK_0:
-			game.dropCoin(9);
+			game.doMove(9);
 			break;
 		}
 	}
@@ -141,12 +141,12 @@ public class InputManager implements KeyListener, MouseListener{
 
 		switch (game.getGamemode()) {
 		case Game.TWO_PLAYER_MODE:
-			game.dropCoin(game.mouseXToColumnIndex(mouseX));
+			game.doMove(game.mouseXToColumnIndex(mouseX));
 			break;
 
 		case Game.SINGLEPLAYER_MODE:
 			if (game.getCurrentPlayer() == Gamelogic.RED) {
-				game.dropCoin(game.mouseXToColumnIndex(mouseX));
+				game.doMove(game.mouseXToColumnIndex(mouseX));
 			}
 		}
 	}

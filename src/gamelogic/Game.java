@@ -8,15 +8,15 @@ import visuals.Grid;
 import visuals.InfoText;
 
 public class Game {
-	
-	private Grid grid;
 
+	private static final Random rand = new Random();
+	
 	public static final int TWO_PLAYER_MODE = 0;
 	public static final int AUTO_DROP_MODE = 1;
 	public static final int SINGLEPLAYER_MODE = 2;
 
 	private int gamemode;
-
+	
 	private static final int PLAYING = 0;
 	private static final int MATCH_ENDED = 1;
 	private static final int READY_FOR_RESET = 2;
@@ -24,16 +24,20 @@ public class Game {
 
 	private int gamestate;
 
-	// used for auto drop mode
-	private double timeSinceLastDrop;
-	private final double dropTime = 0.75;
-	
 	private Gamelogic gamelogic;
-	
+	private Bot bot;
+	private Grid grid;
 	private InfoText infoText;
 	
-	private static final Random rand = new Random();
-	private Bot bot;
+	private int numOfGamesPlayed;
+	private int numOfDraws;
+	private int redScore;
+	private int yellowScore;
+	
+	// used for auto drop mode
+	private double timeSinceLastDrop;
+	private final double dropTime = 0.075;
+
 	
 	public Game(int numRows, int numColumns, int numNeedForWin) {
 		gamelogic = new Gamelogic(numRows, numColumns, numNeedForWin);
@@ -84,7 +88,7 @@ public class Game {
 					while (gamelogic.isPossibleMove(columnIndex) == false) {
 						columnIndex = rand.nextInt(gamelogic.getNumOfColumns());
 					}
-					dropCoin(columnIndex);
+					doMove(columnIndex);
 				}
 				break;
 
@@ -94,7 +98,7 @@ public class Game {
 					if (timeSinceLastDrop > dropTime) {
 						timeSinceLastDrop -= dropTime;
 
-						dropCoin(bot.getNextMove());
+						doMove(bot.getNextMove());
 					}
 				}
 				break;
@@ -122,43 +126,45 @@ public class Game {
 		}
 	}
 
-	/**
-	 * This function tries to drop a coin in a given column.
-	 * If successful the number of {@link #movesPlayed} gets increased by one,
-	 * the {@link #grid} array a the given position gets changed,
-	 * the function {@link #checkForWin()} gets called,
-	 * and if the turn does not relate into a victory or draw the function {@link #switchPlayer()} gets called
-	 *
-	 * @param columnIndex In which column of the array the coin should be dropped.
-	 */
-	public void dropCoin(int columnIndex) {
+	public void doMove(int columnIndex) {
 		if (gamestate != Game.PLAYING) {
 			return;
 		}
-
-		int[] returnMsg = gamelogic.doMove(columnIndex);
-		switch (returnMsg[0]) {
+		
+		int[] gridUpdateInfo = gamelogic.doMove(columnIndex);
+		switch (gridUpdateInfo[0]) {
 		case Gamelogic.INVALID_MOVE:
 			return;
 			
 		case Gamelogic.VALID_MOVE:
 			// updated grid
-			int rowInd = returnMsg[1]; 
-			int colInd = returnMsg[2]; 
-			int currentPlayer = returnMsg[3];
+			int rowInd = gridUpdateInfo[1]; 
+			int colInd = gridUpdateInfo[2]; 
+			int currentPlayer = gridUpdateInfo[3];
 			grid.setState(rowInd, colInd, currentPlayer);
 			
 			// game won or draw?
-			if (gamelogic.isGameFinished()) {
+			if (gamelogic.didGameEndInWin()) {
 				gamestate = MATCH_ENDED;
-				
-				
-				// draw?
-				if (gamelogic.isGameFinishedInDraw()) {
-					return;
-				} else {
-					grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
+				// increment points
+				switch (gamelogic.getPlayerWon()) {
+				case Gamelogic.RED:
+					redScore++;
+					break;
+
+				case Gamelogic.YELLOW:
+					yellowScore++;
+					break;
 				}
+				// increment number of games played
+				numOfGamesPlayed++;
+				// start animation
+				grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
+			} else if (gamelogic.didGameEndInDraw()) {
+				gamestate = MATCH_ENDED;
+				// increment number of games played and number of draws
+				numOfGamesPlayed++;
+				numOfDraws++;
 			}
 		}
 	}
@@ -216,7 +222,23 @@ public class Game {
 		return gamelogic.getCurrentPlayer();
 	}
 	
-	public Gamelogic getGamelogic() {
-		return gamelogic;
+	public int getRedScore() {
+		return redScore;
+	}
+
+	public int getYellowScore() {
+		return yellowScore;
+	}
+
+	public int getNumOfDraws() {
+		return numOfDraws;
+	}
+
+	public int getNumOfGamesPlayed() {
+		return numOfGamesPlayed;
+	}
+	
+	public int getNumOfMovesPlayed() {
+		return gamelogic.getNumOfMovesPlayed();
 	}
 }

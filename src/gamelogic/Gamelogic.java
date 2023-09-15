@@ -6,39 +6,35 @@ public class Gamelogic {
 
 	public static final int INVALID_MOVE = -1;
 	public static final int VALID_MOVE = 0;
-
+	
 	public static final int NOT_DROPPED = 0;
 	public static final int RED = 1;
 	public static final int YELLOW = -1;
-
+	
 	private int numRows;
 	private int numColumns;
 	private int numNeedForWin;
 	private int[][] states;
-
+	
 	private boolean[] possibleMoves;
 	private int[] rowDropIndices;
-
+	
 	private int[] winningRowIndices;
 	private int[] winningColIndices;
-
+	
 	private int currentPlayer;
-
-	private int numOfGamesPlayed;
-	private int numOfDraws;
-	private int redScore;
-	private int yellowScore;
 	private int movesPlayed;
-
-	private boolean gameFinished;
-	private boolean gameFinishedInDraw;
-	private int winningPlayer;
+	
+	private boolean gameEndedInWin;
+	private boolean gameEndedInDraw;
+	private int playerWon;
 	
 	public Gamelogic(int numRows, int numColumns, int numNeedForWin) {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
 		this.states = new int[numRows][numColumns];
+		this.currentPlayer = RED;
 		this.possibleMoves = new boolean[numColumns];
 		this.rowDropIndices = new int[numColumns];
 		for (int i = 0; i < numColumns; i++) {
@@ -49,7 +45,7 @@ public class Gamelogic {
 		this.winningColIndices = new int[numNeedForWin];
 		this.currentPlayer = RED;
 	}
-
+	
 	public void initNewGame() {
 		currentPlayer = RED;
 		for (int rowInd = 0; rowInd < numRows; rowInd++) {
@@ -62,25 +58,26 @@ public class Gamelogic {
 			rowDropIndices[i] = numRows - 1;
 		}
 		movesPlayed = 0;
-		gameFinished = false;
-		gameFinishedInDraw = false;
-		winningPlayer = NOT_DROPPED;
+		gameEndedInWin = false;
+		gameEndedInDraw = false;
+		playerWon = NOT_DROPPED;
 	}
-
+	
 	public int[] doMove(int columnIndex) {
-		if (isPossibleMove(columnIndex) == false || gameFinished) {
-			return new int[]{INVALID_MOVE};
+		if (isPossibleMove(columnIndex) == false || gameEndedInWin || gameEndedInDraw) {
+			return new int[]{INVALID_MOVE}; 
 		}
-
+		
+		// get row index and construct return message with the information which grid position will be updated
 		int rowIndex = rowDropIndices[columnIndex];
-		int[] returnMsg = new int[] {VALID_MOVE, rowIndex, columnIndex, currentPlayer};
-
+		int[] gridUpdateInfo = new int[] {VALID_MOVE, rowIndex, columnIndex, currentPlayer};
+		
 		// increment number of moves played
 		movesPlayed++;
-
+		
 		// updated states
 		states[rowIndex][columnIndex] = currentPlayer;
-
+		
 		// decrement the row dropping index
 		rowDropIndices[columnIndex] --;
 		if (rowDropIndices[columnIndex] < 0) {
@@ -92,47 +89,49 @@ public class Gamelogic {
 			// switch current player
 			switchPlayer();
 
-			return returnMsg;
+			return gridUpdateInfo;
 		}
+		
+		// else check for win or draw:
+		checkForWinOrDraw();
+		
+		// switch current player
+		switchPlayer();
+		
+		return gridUpdateInfo;
+	}
+	
+	/**
+	 * Switches the current player.
+	 */
+	private void switchPlayer() {
+		switch (currentPlayer) {
+		case RED:
+			currentPlayer = YELLOW;
+			break;
 
-		// check for win
+		case YELLOW:
+			currentPlayer = RED;
+			break;
+		}
+	}
+	
+	private void checkForWinOrDraw() {
 		Object[] checkForWinInfo = checkForWin(states, currentPlayer, numNeedForWin);
 		boolean hasWon = (boolean) checkForWinInfo[0];
 		if (hasWon) {
 			// set game finished
-			gameFinished = true;
-			winningPlayer = currentPlayer;
+			gameEndedInWin = true;
+			playerWon = currentPlayer;
 			// set blink animation indices
 			winningRowIndices = (int[]) checkForWinInfo[1];
 			winningColIndices = (int[]) checkForWinInfo[2];
-			
-			// increment points
-			switch (currentPlayer) {
-			case RED:
-				redScore++;
-				break;
-
-			case YELLOW:
-				yellowScore++;
-				break;
-			}
-			// increment number of games played
-			numOfGamesPlayed++;
 		} else if (movesPlayed == numColumns * numRows) { // check for draw
-			// set game finished 
-			gameFinished = true;
-			gameFinishedInDraw = true;
-			// increment number of games played
-			numOfGamesPlayed++;
-			numOfDraws++;
+			// set game finished
+			gameEndedInDraw = true;
 		}
-
-		// switch current player
-		switchPlayer();
-
-		return returnMsg;
 	}
-
+	
 	public boolean[] getPossibleMoves() {
 		return possibleMoves;
 	}
@@ -148,42 +147,6 @@ public class Gamelogic {
 		return possibleMoves[columnIndex];
 	}
 	
-	public int[][] getStates(){
-		return Arrays.stream(states).map(int[]::clone).toArray(int[][]::new);
-	}
-
-	public boolean isGameFinished() {
-		return gameFinished;
-	}
-	
-	public boolean isGameFinishedInDraw() {
-		return gameFinishedInDraw;
-	}
-	
-	public boolean didPlayerWin(int player) {
-		return winningPlayer == player;
-	}
-	
-	/**
-	 * Switches the current player
-	 */
-	private void switchPlayer() {
-		switch (currentPlayer) {
-		case RED:
-			currentPlayer = YELLOW;
-			break;
-
-		case YELLOW:
-			currentPlayer = RED;
-			break;
-		}
-	}
-
-	/**
-	 * Checks if the current turn relates into a win for the current player
-	 * @param player the color to check a win for, often it is the color of the current turn
-	 * @return true if the current player has won, false if not
-	 */
 	public static Object[] checkForWin(int[][] states, int player, int numNeedForWin) {
 		int numRows = states.length;
 		int numColumns = states[0].length;
@@ -270,7 +233,7 @@ public class Gamelogic {
 			}
 		}
 		
-		return new Object[] {false, winningRowIndices, winningColIndices};
+		return new Object[] {false};
 	}
 
 	private static void clearWinningIndicesArray(int[] winningRowIndices, int[] winningColIndices, int numNeedForWin) {
@@ -279,7 +242,7 @@ public class Gamelogic {
 			winningColIndices[i] = -1;
 		}
 	}
-
+	
 	public int[] getWinningRowIndices() {
 		return winningRowIndices;
 	}
@@ -287,7 +250,7 @@ public class Gamelogic {
 	public int[] getWinningColIndices() {
 		return winningColIndices;
 	}
-
+	
 	public void printBoard() {
 		printBoard(states);
 	}
@@ -301,15 +264,31 @@ public class Gamelogic {
 		}
 		System.out.println();
 	}
-
-	public int getNumNeedForWin() {
-		return numNeedForWin;
+	
+	public int[][] getStates(){
+		return Arrays.stream(states).map(int[]::clone).toArray(int[][]::new);
 	}
 	
-	public int getNumOfColumns() {
-		return numColumns;
+	public boolean didGameEndInWin() {
+		return gameEndedInWin;
 	}
-
+	
+	public boolean didGameEndInDraw() {
+		return gameEndedInDraw;
+	}
+	
+	public boolean didGameEnd() {
+		return didGameEndInWin() || didGameEndInDraw();
+	}
+	
+	public boolean didPlayerWin(int player) {
+		return playerWon == player;
+	}
+	
+	public int getPlayerWon() {
+		return playerWon;
+	}
+	
 	public int getCurrentPlayer() {
 		return currentPlayer;
 	}
@@ -317,20 +296,12 @@ public class Gamelogic {
 	public int getNumOfMovesPlayed() {
 		return movesPlayed;
 	}
-
-	public int getRedScore() {
-		return redScore;
+	
+	public int getNumOfColumns() {
+		return numColumns;
 	}
-
-	public int getYellowScore() {
-		return yellowScore;
-	}
-
-	public int getNumOfDraws() {
-		return numOfDraws;
-	}
-
-	public int getNumOfGamesPlayed() {
-		return numOfGamesPlayed;
+	
+	public int getNumNeedForWin() {
+		return numNeedForWin;
 	}
 }
