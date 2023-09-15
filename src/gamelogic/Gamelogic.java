@@ -46,6 +46,23 @@ public class Gamelogic {
 		this.currentPlayer = RED;
 	}
 	
+	// copy constructor
+	public Gamelogic(Gamelogic gamelogic) {
+		this.numRows = gamelogic.getNumOfRows();
+		this.numColumns = gamelogic.getNumOfColumns();
+		this.numNeedForWin = gamelogic.getNumNeedForWin();
+		this.states = gamelogic.getStates();
+		this.possibleMoves = gamelogic.getPossibleMoves();
+		this.rowDropIndices = gamelogic.getRowDropIndices();
+		this.winningRowIndices = gamelogic.getWinningRowIndices();
+		this.winningColIndices = gamelogic.getWinningColIndices();
+		this.currentPlayer = gamelogic.getCurrentPlayer();
+		this.movesPlayed = gamelogic.getNumOfMovesPlayed();
+		this.gameEndedInDraw = gamelogic.didGameEndInDraw();
+		this.gameEndedInWin = gamelogic.didGameEndInWin();
+		this.playerWon = gamelogic.playerWon;
+	}
+	
 	public void initNewGame() {
 		currentPlayer = RED;
 		for (int rowInd = 0; rowInd < numRows; rowInd++) {
@@ -133,7 +150,7 @@ public class Gamelogic {
 	}
 	
 	public boolean[] getPossibleMoves() {
-		return possibleMoves;
+		return possibleMoves.clone();
 	}
 	
 	public int[] getRowDropIndices() {
@@ -295,6 +312,10 @@ public class Gamelogic {
 
 	public int getNumOfMovesPlayed() {
 		return movesPlayed;
+	}
+	
+	public int getNumOfRows() {
+		return numRows;
 	}
 	
 	public int getNumOfColumns() {

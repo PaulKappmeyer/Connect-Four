@@ -25,7 +25,8 @@ public class Game {
 	private int gamestate;
 
 	private Gamelogic gamelogic;
-	private Bot bot;
+	private MinimaxBot minimaxBot = new MinimaxBot();
+	private SimpleBot simpleBot = new SimpleBot();
 	private Grid grid;
 	private InfoText infoText;
 	
@@ -49,7 +50,8 @@ public class Game {
 		infoText = new InfoText(this);
 		
 		// computer AI
-		bot = new Bot(gamelogic);
+		minimaxBot = new MinimaxBot();
+		simpleBot = new SimpleBot();
 		
 		initNewGame();
 	}
@@ -98,7 +100,13 @@ public class Game {
 					if (timeSinceLastDrop > dropTime) {
 						timeSinceLastDrop -= dropTime;
 
-						doMove(bot.getNextMove());
+						// minimax bot is atm only implemented for the standard 6x7-grid
+						if (gamelogic.getNumOfRows() <= Main.STANDARD_NUM_ROWS && gamelogic.getNumOfColumns() <= Main.STANDARD_NUM_COLUMNS) {
+							doMove(minimaxBot.getNextMove(gamelogic));
+						} else {
+							doMove(simpleBot.getNextMove(gamelogic));
+						}
+						
 					}
 				}
 				break;
