@@ -25,8 +25,9 @@ public class Game {
 	private int gamestate;
 
 	private Gamelogic gamelogic;
-	private MinimaxBot minimaxBot = new MinimaxBot();
-	private SimpleBot simpleBot = new SimpleBot();
+	private Bot currentBot;
+	private MinimaxBot minimaxBot;
+	private SimpleBot simpleBot;
 	private Grid grid;
 	private InfoText infoText;
 	
@@ -50,7 +51,7 @@ public class Game {
 		infoText = new InfoText(this);
 		
 		// computer AI
-		minimaxBot = new MinimaxBot();
+		minimaxBot = new MinimaxBot(gamelogic);
 		simpleBot = new SimpleBot();
 		
 		initNewGame();
@@ -63,6 +64,7 @@ public class Game {
 		gamelogic.initNewGame();
 		grid.initNewGame();
 		gamestate = PLAYING;
+		minimaxBot.initNewGame();
 	}
 
 	public void draw(Graphics graphics) {
@@ -74,6 +76,8 @@ public class Game {
 
 	public void update(double tslf) {
 		grid.update(tslf);
+		
+//		System.out.println(minimaxBot.isAlive());
 		
 		switch (gamestate) {
 		case PLAYING:
@@ -100,13 +104,7 @@ public class Game {
 					if (timeSinceLastDrop > dropTime) {
 						timeSinceLastDrop -= dropTime;
 
-						// minimax bot is atm only implemented for the standard 6x7-grid
-						if (gamelogic.getNumOfRows() <= Main.STANDARD_NUM_ROWS && gamelogic.getNumOfColumns() <= Main.STANDARD_NUM_COLUMNS) {
-							doMove(minimaxBot.getNextMove(gamelogic));
-						} else {
-							doMove(simpleBot.getNextMove(gamelogic));
-						}
-						
+						doMove(currentBot.getNextMove(gamelogic));				
 					}
 				}
 				break;
@@ -217,8 +215,19 @@ public class Game {
 	public void toggleSingleplayerMode() {
 		if (gamemode == Game.SINGLEPLAYER_MODE) {
 			gamemode = Game.TWO_PLAYER_MODE;
+			minimaxBot.stop();
+			currentBot = null;
+			
 		} else {
 			gamemode = Game.SINGLEPLAYER_MODE;
+			
+			// minimax bot is atm only implemented for the standard 6x7-grid
+			if (gamelogic.getNumOfRows() <= Main.STANDARD_NUM_ROWS && gamelogic.getNumOfColumns() <= Main.STANDARD_NUM_COLUMNS) {
+				minimaxBot.start();
+				currentBot = minimaxBot;
+			} else {
+				currentBot = simpleBot;
+			}
 		}
 	}
 
