@@ -10,13 +10,15 @@ public class MinimaxBot extends Bot implements Runnable {
 			{4, 6, 8, 10, 8, 6, 4},
 			{3, 4, 5, 7, 5, 4, 3}};
 
-	private final int maxDepth = 9;
+	private final int maxDepth = 11;
 	private int bestMove;
 	private boolean nextMoveReady;
 	
 	private Gamelogic gamelogic;
 	
 	private volatile Thread minimaxThread;
+	
+	private int[] columnSearchOrder = new int[] {3, 2, 4, 1, 5, 0, 6};
 	
 	public MinimaxBot(Gamelogic gamelogic) {
 		this.gamelogic = gamelogic;
@@ -33,7 +35,7 @@ public class MinimaxBot extends Bot implements Runnable {
 
 		if (maximizingPlayer) {
 			double maxEval = Double.NEGATIVE_INFINITY;
-			for (int columnIndex = 0; columnIndex < position.getNumOfColumns(); columnIndex++) {
+			for (int columnIndex : columnSearchOrder) {
 				if (position.isPossibleMove(columnIndex) == false) {
 					continue;
 				}
@@ -55,7 +57,7 @@ public class MinimaxBot extends Bot implements Runnable {
 			return maxEval;
 		} else {
 			double minEval = Double.POSITIVE_INFINITY;
-			for (int columnIndex = 0; columnIndex < position.getNumOfColumns(); columnIndex++) {
+			for (int columnIndex : columnSearchOrder) {
 				if (position.isPossibleMove(columnIndex) == false) {
 					continue;
 				}
@@ -81,7 +83,7 @@ public class MinimaxBot extends Bot implements Runnable {
 
 		
 		int utility = 138;
-		int sum = 0;
+		double sum = 0;
 		int[][] board = position.getStates();
 		int numRows = board.length;
 		int numColumns = board[0].length;

@@ -14,7 +14,7 @@ public class Gamelogic {
 	private int numRows;
 	private int numColumns;
 	private int numNeedForWin;
-	private int[][] states;
+	private int[][] board;
 	
 	private boolean[] possibleMoves;
 	private int[] rowDropIndices;
@@ -33,7 +33,7 @@ public class Gamelogic {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
-		this.states = new int[numRows][numColumns];
+		this.board = new int[numRows][numColumns];
 		this.currentPlayer = RED;
 		this.possibleMoves = new boolean[numColumns];
 		this.rowDropIndices = new int[numColumns];
@@ -51,7 +51,7 @@ public class Gamelogic {
 		this.numRows = gamelogic.getNumOfRows();
 		this.numColumns = gamelogic.getNumOfColumns();
 		this.numNeedForWin = gamelogic.getNumNeedForWin();
-		this.states = gamelogic.getStates();
+		this.board = gamelogic.getStates();
 		this.possibleMoves = gamelogic.getPossibleMoves();
 		this.rowDropIndices = gamelogic.getRowDropIndices();
 		this.winningRowIndices = gamelogic.getWinningRowIndices();
@@ -67,7 +67,7 @@ public class Gamelogic {
 		currentPlayer = RED;
 		for (int rowInd = 0; rowInd < numRows; rowInd++) {
 			for (int colInd = 0; colInd < numColumns; colInd++) {
-				states[rowInd][colInd] = NOT_DROPPED;
+				board[rowInd][colInd] = NOT_DROPPED;
 			}
 		}
 		for (int i = 0; i < numColumns; i++) {
@@ -93,7 +93,7 @@ public class Gamelogic {
 		movesPlayed++;
 		
 		// updated states
-		states[rowIndex][columnIndex] = currentPlayer;
+		board[rowIndex][columnIndex] = currentPlayer;
 		
 		// decrement the row dropping index
 		rowDropIndices[columnIndex] --;
@@ -134,7 +134,7 @@ public class Gamelogic {
 	}
 	
 	private void checkForWinOrDraw() {
-		Object[] checkForWinInfo = checkForWin(states, currentPlayer, numNeedForWin);
+		Object[] checkForWinInfo = checkForWin(board, currentPlayer, numNeedForWin);
 		boolean hasWon = (boolean) checkForWinInfo[0];
 		if (hasWon) {
 			// set game finished
@@ -269,21 +269,50 @@ public class Gamelogic {
 	}
 	
 	public void printBoard() {
-		printBoard(states);
+		printBoard(board);
 	}
 	
 	public static void printBoard(int[][] states) {
+//		System.out.println(boardToString(states, " 0", " 1", "-1", " ", "\n"));
+		System.out.println(boardToString(states, "O", "R", "Y", " ", "\n"));
+	}
+	
+	public static String boardToString(int[][] states, String not_dropped, String red, String yellow, String sep, String rowSep) {
+		StringBuilder str = new StringBuilder();
 		for (int[] stateRow : states) {
 			for (int state : stateRow) {
-				System.out.printf("%3d", state);
+				switch (state) {
+				case NOT_DROPPED:
+					str.append(not_dropped);
+					break;
+				
+				case RED:
+					str.append(red);
+					break;
+					
+				case YELLOW:
+					str.append(yellow);
+					break;
+				}
+				str.append(sep);
 			}
-			System.out.println();
+			str.append(rowSep);
 		}
-		System.out.println();
+		return str.toString(); 
+	}
+	
+	public String toString(String not_dropped, String red, String yellow, String sep, String rowSep) {
+		return boardToString(board, not_dropped, red, yellow, sep, rowSep);
+	}
+	
+	@Override
+	public String toString() {
+//		return boardToString(board, " 0", " 1", "-1", " ", "\n");
+		return boardToString(board, "O", "R", "Y", " ", "\n");
 	}
 	
 	public int[][] getStates(){
-		return Arrays.stream(states).map(int[]::clone).toArray(int[][]::new);
+		return Arrays.stream(board).map(int[]::clone).toArray(int[][]::new);
 	}
 	
 	public boolean didGameEndInWin() {

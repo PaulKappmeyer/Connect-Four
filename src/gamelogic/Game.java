@@ -77,8 +77,6 @@ public class Game {
 	public void update(double tslf) {
 		grid.update(tslf);
 		
-//		System.out.println(minimaxBot.isAlive());
-		
 		switch (gamestate) {
 		case PLAYING:
 			switch (gamemode) {
