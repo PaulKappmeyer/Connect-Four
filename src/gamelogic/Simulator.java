@@ -2,6 +2,8 @@ package gamelogic;
 
 import java.util.Random;
 
+import gamelogic.Gamelogic.Boardstate;
+
 public class Simulator {
 
 	private static final Random rand = new Random();
@@ -28,9 +30,9 @@ public class Simulator {
 				gamelogic.doMove(columnIndex);
 			} while (gamelogic.didGameEnd() == false);
 
-			if (gamelogic.didPlayerWin(Gamelogic.RED)) {
+			if (gamelogic.didPlayerWin(Boardstate.RED)) {
 				redScore ++;
-			} else if (gamelogic.didPlayerWin(Gamelogic.YELLOW)) {
+			} else if (gamelogic.didPlayerWin(Boardstate.YELLOW)) {
 				yellowScore ++;
 			} else if (gamelogic.didGameEndInDraw()) {
 				draws ++;

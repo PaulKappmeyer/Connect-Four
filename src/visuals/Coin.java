@@ -3,19 +3,21 @@ package visuals;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import gamelogic.Gamelogic;
+import gamelogic.Gamelogic.Boardstate;
 import gamelogic.Main;
 
 public class Coin {
 	
-	private static final int NO_ANIMATION = -1;
-	private static final int DROP_ANIMATION = 0;
-	private static final int RESET_FALL_ANIMATION = 2;
+	private enum AnimationState {
+		HIDDEN,
+		DROP_ANIMATION,
+		SHOWN,
+		RESET_FALL_ANIMATION,
+	}
 
-	private int animationState;
+	private AnimationState animationState;
 	
 	// used to indicate which player dropped the coin / if it is was drop
-	private int coinstate;
 	private Color color;
 
 	// target position on screen
@@ -35,30 +37,29 @@ public class Coin {
 	private static double aktBlinkTime;
 	private static boolean swapBlink;
 	private boolean blinking;
-	
-	private Grid grid;
 
-	public Coin(double targetX, double targetY, double diameter, Grid grid) {
-		this.coinstate = Gamelogic.NOT_DROPPED;
+	public Coin(double targetX, double targetY, double diameter) {
 		this.targetX = targetX;
 		this.targetY = targetY;
 		this.diameter = diameter;
-		this.currentY = targetY;
-		this.grid = grid;
-		this.animationState = NO_ANIMATION;
+		initNewGame();
 	}
 
 	public void initNewGame() {
-		coinstate = Gamelogic.NOT_DROPPED;
-		animationState = NO_ANIMATION;
-		currentY = targetY;
+		animationState = AnimationState.HIDDEN;
+		color = null;
 	}
 
 	public void draw(Graphics graphics) {
-		if (coinstate == Gamelogic.NOT_DROPPED) {
+		if (animationState == AnimationState.HIDDEN) {
 			return;
 		}
 
+		// if color == null, then the coin wasn't dropped
+		if (color == null) {
+			return;
+		}
+		
 		// for blink animation
 		graphics.setColor(color);
 		if (blinking) {
@@ -77,6 +78,9 @@ public class Coin {
 
 	public void update(double tslf) {
 		switch (animationState) {
+		case HIDDEN:
+			break;
+		
 		case DROP_ANIMATION:
 			// update position and speed
 			move(tslf);
@@ -86,21 +90,24 @@ public class Coin {
 				currentY = targetY;
 				speed *= (-1. + ENERGY_LOSS_ON_BOUNCE);
 				
-				// very slow? -> stop drop animation
+				// is very slow? -> stop drop animation
 				if (Math.abs(speed) <= STOP_ANIMATION_SPEED) {
-					stopDropAnimation();
+					animationState = AnimationState.SHOWN;
 				}
 			}
 
 			break;
 
+		case SHOWN:
+			break;
+			
 		case RESET_FALL_ANIMATION:
 			// update position and speed
 			move(tslf);
 
-			// check if left the screen
+			// check if moved out of the screen
 			if (currentY > Main.SCREEN_HEIGHT ) {
-				stopDropAnimation();
+				animationState = AnimationState.HIDDEN;
 			}
 			break;
 		}
@@ -111,28 +118,26 @@ public class Coin {
 		speed += GRAVITY * tslf;
 	}
 
-	public void setState(int player) {
-		coinstate = player;
-		switch (coinstate) {
-		case Gamelogic.RED:
+	public void setPlayerColor(Boardstate player) {
+		switch (player) {
+		case NOT_DROPPED:
+			color = null;
+			break;
+		
+		case RED:
 			color = Color.RED;
 			break;
-		case Gamelogic.YELLOW:
+			
+		case YELLOW:
 			color = Color.YELLOW;
-			break;
-		default:
 			break;
 		}
 	}
 
-	public void startDropAnimation() {
-		animationState = DROP_ANIMATION;
-		currentY = grid.DROP_Y;
+	public void startDropAnimation(double dropY) {
+		animationState = AnimationState.DROP_ANIMATION;
+		currentY = dropY;
 		speed = 0;
-	}
-
-	private void stopDropAnimation() {
-		animationState = NO_ANIMATION;
 	}
 
 	/**
@@ -151,7 +156,7 @@ public class Coin {
 	 * This function starts the reset-animation.
 	 */
 	public void startResetAnimation() {
-		animationState = RESET_FALL_ANIMATION;
+		animationState = AnimationState.RESET_FALL_ANIMATION;
 		speed = 0;
 	}
 
@@ -166,15 +171,11 @@ public class Coin {
 
 
 	public boolean isInDropAnimation() {
-		return animationState == DROP_ANIMATION;
+		return animationState == AnimationState.DROP_ANIMATION;
 	}
 
 	public boolean isInResetAnimation() {
-		return animationState == RESET_FALL_ANIMATION;
-	}
-
-	public int getState() {
-		return coinstate;
+		return animationState == AnimationState.RESET_FALL_ANIMATION;
 	}
 
 	public double getTargetX() {

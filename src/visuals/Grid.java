@@ -7,6 +7,7 @@ import java.awt.Rectangle;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 
+import gamelogic.Gamelogic.Boardstate;
 import gamelogic.Main;
 
 public class Grid {
@@ -39,7 +40,6 @@ public class Grid {
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
 
-
 		double boundingBoxSize = Math.min(WINDOW_HEIGHT_OF_GRID / (double) numRows, Main.SCREEN_WIDTH / (double) numColumns);
 		this.coinDiameter = 0.95 * boundingBoxSize;
 		this.xSpacing = 0.05 * boundingBoxSize;
@@ -54,7 +54,7 @@ public class Grid {
 			for (int rowInd = 0; rowInd < numRows; rowInd++) {
 				double xPos = colInd * (coinDiameter + xSpacing) + xOffset;
 				double yPos = rowInd * (coinDiameter + ySpacing) + yOffset;
-				coins[rowInd][colInd] = new Coin(xPos, yPos, coinDiameter, this);
+				coins[rowInd][colInd] = new Coin(xPos, yPos, coinDiameter);
 				backgroundArea.subtract(new Area(new Ellipse2D.Double(xPos, yPos, coinDiameter, coinDiameter)));
 			}
 		}
@@ -190,19 +190,24 @@ public class Grid {
 		return false;
 	}
 
-	public int getState(int rowInd, int colInd) {
-		return coins[rowInd][colInd].getState();
-	}
-
-	public void setState(int rowInd, int colInd, int state) {
-		coins[rowInd][colInd].setState(state);
+	public void setState(int rowInd, int colInd, Boardstate state) {
+		coins[rowInd][colInd].setPlayerColor(state);
 
 		if (SHOW_ANIMATIONS) {
-			coins[rowInd][colInd].startDropAnimation();
+			coins[rowInd][colInd].startDropAnimation(DROP_Y);
 		}
 	}
 
-	public Coin[][] getCoins() {
-		return coins;
+	public int mouseXToColumnIndex(int mouseX) {
+		for (int colInd = 0; colInd < numColumns; colInd++) {
+			Coin coin = coins[0][colInd];
+			double x1 = coin.getTargetX();
+			double x2 = coin.getTargetX() + coin.getDiameter();
+
+			if (mouseX > x1 && mouseX < x2) {
+				return colInd;
+			}
+		}
+		return -1;
 	}
 }

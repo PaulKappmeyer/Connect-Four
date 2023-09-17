@@ -3,7 +3,8 @@ package gamelogic;
 import java.awt.Graphics;
 import java.util.Random;
 
-import visuals.Coin;
+import gamelogic.Gamelogic.BoardUpdateInfo;
+import gamelogic.Gamelogic.Boardstate;
 import visuals.Grid;
 import visuals.InfoText;
 
@@ -11,18 +12,22 @@ public class Game {
 
 	private static final Random rand = new Random();
 	
-	public static final int TWO_PLAYER_MODE = 0;
-	public static final int AUTO_DROP_MODE = 1;
-	public static final int SINGLEPLAYER_MODE = 2;
+	public enum Gamemode {
+		PLAYER_VS_PLAYER,
+		PLAYER_VS_COMPUTER,
+		AUTO_DROP,
+	}
 
-	private int gamemode;
+	private Gamemode gamemode;
 	
-	private static final int PLAYING = 0;
-	private static final int MATCH_ENDED = 1;
-	private static final int READY_FOR_RESET = 2;
-	private static final int IN_RESET_ANIMATION = 3;
+	private enum Gamestate {
+		PLAYING,
+		MATCH_ENDED,
+		READY_FOR_RESET,
+		IN_RESET_ANIMATION,
+	}
 
-	private int gamestate;
+	private Gamestate gamestate;
 
 	private Gamelogic gamelogic;
 	private Bot currentBot;
@@ -43,8 +48,8 @@ public class Game {
 	
 	public Game(int numRows, int numColumns, int numNeedForWin) {
 		gamelogic = new Gamelogic(numRows, numColumns, numNeedForWin);
-		gamemode = TWO_PLAYER_MODE;
-		gamestate = PLAYING;
+		gamemode = Gamemode.PLAYER_VS_PLAYER;
+		gamestate = Gamestate.PLAYING;
 		
 		// visuals
 		grid = new Grid(numRows, numColumns, numNeedForWin);
@@ -61,9 +66,9 @@ public class Game {
 	 * This function starts a new game with the current player being red
 	 */
 	private void initNewGame() {
+		gamestate = Gamestate.PLAYING;
 		gamelogic.initNewGame();
 		grid.initNewGame();
-		gamestate = PLAYING;
 		minimaxBot.initNewGame();
 	}
 
@@ -80,10 +85,10 @@ public class Game {
 		switch (gamestate) {
 		case PLAYING:
 			switch (gamemode) {
-			case TWO_PLAYER_MODE:
+			case PLAYER_VS_PLAYER:
 				break;
 
-			case AUTO_DROP_MODE:
+			case AUTO_DROP:
 				timeSinceLastDrop += tslf;
 				if (timeSinceLastDrop > dropTime) {
 					timeSinceLastDrop -= dropTime;
@@ -96,8 +101,8 @@ public class Game {
 				}
 				break;
 
-			case SINGLEPLAYER_MODE:
-				if (gamelogic.getCurrentPlayer() == Gamelogic.YELLOW) {
+			case PLAYER_VS_COMPUTER:
+				if (gamelogic.getCurrentPlayer() == Boardstate.YELLOW) {
 					timeSinceLastDrop += tslf;
 					if (timeSinceLastDrop > dropTime) {
 						timeSinceLastDrop -= dropTime;
@@ -111,14 +116,17 @@ public class Game {
 
 		case MATCH_ENDED:
 			if (grid.isAnyCoinInDropAnimation() == false) {
-				gamestate = READY_FOR_RESET;
+				gamestate = Gamestate.READY_FOR_RESET;
 			}
 			break;
 
 		case READY_FOR_RESET:
 			switch (gamemode) {
-			case AUTO_DROP_MODE:
+			case AUTO_DROP:
 				startResetAnimation();
+				
+			default:
+				break;
 			}
 			break;
 
@@ -131,32 +139,35 @@ public class Game {
 	}
 
 	public void doMove(int columnIndex) {
-		if (gamestate != Game.PLAYING) {
+		if (gamestate != Gamestate.PLAYING) {
 			return;
 		}
 		
-		int[] gridUpdateInfo = gamelogic.doMove(columnIndex);
-		switch (gridUpdateInfo[0]) {
-		case Gamelogic.INVALID_MOVE:
+		Object[] gridUpdateInfo = gamelogic.doMove(columnIndex);
+		switch ((BoardUpdateInfo) gridUpdateInfo[0]) {
+		case INVALID_MOVE:
 			return;
 			
-		case Gamelogic.VALID_MOVE:
+		case VALID_MOVE:
 			// updated grid
-			int rowInd = gridUpdateInfo[1]; 
-			int colInd = gridUpdateInfo[2]; 
-			int currentPlayer = gridUpdateInfo[3];
+			int rowInd = (int) gridUpdateInfo[1]; 
+			int colInd = (int) gridUpdateInfo[2]; 
+			Boardstate currentPlayer = (Boardstate) gridUpdateInfo[3];
 			grid.setState(rowInd, colInd, currentPlayer);
 			
 			// game won or draw?
 			if (gamelogic.didGameEndInWin()) {
-				gamestate = MATCH_ENDED;
+				gamestate = Gamestate.MATCH_ENDED;
 				// increment points
 				switch (gamelogic.getPlayerWon()) {
-				case Gamelogic.RED:
+				case NOT_DROPPED:
+					break;
+				
+				case RED:
 					redScore++;
 					break;
 
-				case Gamelogic.YELLOW:
+				case YELLOW:
 					yellowScore++;
 					break;
 				}
@@ -165,7 +176,7 @@ public class Game {
 				// start animation
 				grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
 			} else if (gamelogic.didGameEndInDraw()) {
-				gamestate = MATCH_ENDED;
+				gamestate = Gamestate.MATCH_ENDED;
 				// increment number of games played and number of draws
 				numOfGamesPlayed++;
 				numOfDraws++;
@@ -173,51 +184,38 @@ public class Game {
 		}
 	}
 
-	public int mouseXToColumnIndex(int mouseX) {
-		for (int colInd = 0; colInd < gamelogic.getNumOfColumns(); colInd++) {
-			Coin coin = grid.getCoins()[0][colInd];
-			double x1 = coin.getTargetX();
-			double x2 = coin.getTargetX() + coin.getDiameter();
-
-			if (mouseX > x1 && mouseX < x2) {
-				return colInd;
-			}
-		}
-		return -1;
-	}
-
 	public boolean isReadyForReset() {
-		return gamestate == READY_FOR_RESET;
+		return gamestate == Gamestate.READY_FOR_RESET;
 	}
 
 	/**
 	 * This function instantly starts the reset-animation
 	 */
 	public void startResetAnimation() {
-		if (gamestate == IN_RESET_ANIMATION) {
+		if (gamestate == Gamestate.IN_RESET_ANIMATION) {
 			return;
 		}
 
-		gamestate = IN_RESET_ANIMATION;
+		gamestate = Gamestate.IN_RESET_ANIMATION;
 		grid.startResetAnimation();
 	}
 
 	public void toggleAutoDropMode() {
-		if (gamemode == Game.AUTO_DROP_MODE) {
-			gamemode = Game.TWO_PLAYER_MODE;
+		if (gamemode == Gamemode.AUTO_DROP) {
+			gamemode = Gamemode.PLAYER_VS_PLAYER;
 		} else {
-			gamemode = Game.AUTO_DROP_MODE;
+			gamemode = Gamemode.AUTO_DROP;
 		}
 	}
 
 	public void toggleSingleplayerMode() {
-		if (gamemode == Game.SINGLEPLAYER_MODE) {
-			gamemode = Game.TWO_PLAYER_MODE;
+		if (gamemode == Gamemode.PLAYER_VS_COMPUTER) {
+			gamemode = Gamemode.PLAYER_VS_PLAYER;
 			minimaxBot.stop();
 			currentBot = null;
 			
 		} else {
-			gamemode = Game.SINGLEPLAYER_MODE;
+			gamemode = Gamemode.PLAYER_VS_COMPUTER;
 			
 			// minimax bot is atm only implemented for the standard 6x7-grid
 			if (gamelogic.getNumOfRows() <= Main.STANDARD_NUM_ROWS && gamelogic.getNumOfColumns() <= Main.STANDARD_NUM_COLUMNS) {
@@ -228,12 +226,16 @@ public class Game {
 			}
 		}
 	}
-
-	public int getGamemode() {
+	
+	public int mouseXToColumnIndex(int mouseX) {
+		return grid.mouseXToColumnIndex(mouseX);
+	}
+	
+	public Gamemode getGamemode() {
 		return gamemode;
 	}
 
-	public int getCurrentPlayer() {
+	public Boardstate getCurrentPlayer() {
 		return gamelogic.getCurrentPlayer();
 	}
 	

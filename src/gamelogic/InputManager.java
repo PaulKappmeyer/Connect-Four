@@ -18,14 +18,17 @@ public class InputManager implements KeyListener, MouseListener{
 		Game game = Main.getGame();
 		
 		switch (game.getGamemode()) {
-		case Game.TWO_PLAYER_MODE:
+		case PLAYER_VS_PLAYER:
 			checkDroppingKeys(keyCode);
 			break;
 
-		case Game.SINGLEPLAYER_MODE:
-			if (game.getCurrentPlayer() == Gamelogic.RED) {
+		case PLAYER_VS_COMPUTER:
+			if (game.getCurrentPlayer() == Gamelogic.Boardstate.RED) {
 				checkDroppingKeys(keyCode);
 			}
+			break;
+		
+		default:
 			break;
 		}
 
@@ -140,14 +143,18 @@ public class InputManager implements KeyListener, MouseListener{
 		int mouseX = e.getX();
 
 		switch (game.getGamemode()) {
-		case Game.TWO_PLAYER_MODE:
+		case PLAYER_VS_PLAYER:
 			game.doMove(game.mouseXToColumnIndex(mouseX));
 			break;
 
-		case Game.SINGLEPLAYER_MODE:
-			if (game.getCurrentPlayer() == Gamelogic.RED) {
+		case PLAYER_VS_COMPUTER:
+			if (game.getCurrentPlayer() == Gamelogic.Boardstate.RED) {
 				game.doMove(game.mouseXToColumnIndex(mouseX));
 			}
+			break;
+		
+		default:
+			break;
 		}
 	}
 }

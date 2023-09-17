@@ -1,6 +1,9 @@
 package gamelogic;
 
 import java.util.List;
+
+import gamelogic.Gamelogic.Boardstate;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -9,16 +12,16 @@ public class SimpleBot extends Bot {
 	@Override
 	public int getNextMove(Gamelogic position) {
 		int[] rowDropIndices = position.getRowDropIndices();
-		int[][] states = position.getStates();
+		Boardstate[][] board = position.getBoard();
 		
 		// check own winning moves
-		int[] ownWinningMoves = seachWinningMoves(position, states, rowDropIndices, Gamelogic.YELLOW);
+		int[] ownWinningMoves = seachWinningMoves(position, board, rowDropIndices, Boardstate.YELLOW);
 		if (ownWinningMoves.length > 0) {
 			return ownWinningMoves[0];
 		}
 		
 		// check opponents winning moves
-		int[] opponentsWinningMoves = seachWinningMoves(position, states, rowDropIndices, Gamelogic.RED);
+		int[] opponentsWinningMoves = seachWinningMoves(position, board, rowDropIndices, Boardstate.RED);
 		if (opponentsWinningMoves.length > 0) {
 			return opponentsWinningMoves[0];
 		}
@@ -41,13 +44,13 @@ public class SimpleBot extends Bot {
 			continue;
 		}
 		
-		// apply random move to states
+		// apply random move to board
 		int rowIndex = rowDropIndices[columnIndex];
-		states[rowIndex][columnIndex] = Gamelogic.YELLOW;
+		board[rowIndex][columnIndex] = Boardstate.YELLOW;
 		rowDropIndices[columnIndex] --;
 		
 		// check opponents winning moves
-		opponentsWinningMoves = seachWinningMoves(position, states, rowDropIndices, Gamelogic.RED);
+		opponentsWinningMoves = seachWinningMoves(position, board, rowDropIndices, Boardstate.RED);
 		
 		// does move allow red to win? 
 		if (opponentsWinningMoves.length > 0) {
@@ -56,7 +59,7 @@ public class SimpleBot extends Bot {
 			instantlyLosing[columnIndex] = true;
 			
 			// undo move
-			states[rowIndex][columnIndex] = Gamelogic.NOT_DROPPED;
+			board[rowIndex][columnIndex] = Boardstate.NOT_DROPPED;
 			rowDropIndices[columnIndex] ++;
 		}
 		
@@ -65,7 +68,7 @@ public class SimpleBot extends Bot {
 		return columnIndex;
 	}
 	
-	private int[] seachWinningMoves(Gamelogic position, int[][] states, int[] rowDropIndices, int player) {
+	private int[] seachWinningMoves(Gamelogic position, Boardstate[][] board, int[] rowDropIndices, Boardstate player) {
 		List<Integer> winningMoves = new ArrayList<>();
 		
 		for (int columnIndex = 0; columnIndex < position.getNumOfColumns(); columnIndex++) {
@@ -75,16 +78,16 @@ public class SimpleBot extends Bot {
 				continue;
 			}
 			// apply move
-			states[rowIndex][columnIndex] = player;
+			board[rowIndex][columnIndex] = player;
 			
 			// check for win:
-			boolean hasWon = (boolean) Gamelogic.checkForWin(states, player, position.getNumNeedForWin())[0];
+			boolean hasWon = (boolean) Gamelogic.checkForWin(board, player, position.getNumNeedForWin())[0];
 			if (hasWon) {
 				winningMoves.add(columnIndex);
 			}
 			
 			// undo move
-			states[rowIndex][columnIndex] = Gamelogic.NOT_DROPPED;
+			board[rowIndex][columnIndex] = Boardstate.NOT_DROPPED;
 		}
 		
 		return winningMoves.stream().mapToInt(i -> i).toArray();

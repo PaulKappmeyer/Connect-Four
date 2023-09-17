@@ -1,5 +1,7 @@
 package gamelogic;
 
+import gamelogic.Gamelogic.Boardstate;
+
 public class MinimaxBot extends Bot implements Runnable {
 
 	private static final int[][] evaluationTable = {
@@ -73,9 +75,9 @@ public class MinimaxBot extends Bot implements Runnable {
 
 	//here is where the evaluation table is called
 	public double evaluatePosition(Gamelogic position) {
-		if (position.didPlayerWin(Gamelogic.YELLOW)) {
+		if (position.didPlayerWin(Boardstate.YELLOW)) {
 			return Double.POSITIVE_INFINITY;
-		} else if (position.didPlayerWin(Gamelogic.RED)) {
+		} else if (position.didPlayerWin(Boardstate.RED)) {
 			return Double.NEGATIVE_INFINITY;
 		} else if (position.didGameEndInDraw()) {
 			return 0;
@@ -84,18 +86,22 @@ public class MinimaxBot extends Bot implements Runnable {
 		
 		int utility = 138;
 		double sum = 0;
-		int[][] board = position.getStates();
+		Boardstate[][] board = position.getBoard();
 		int numRows = board.length;
 		int numColumns = board[0].length;
 		for (int i = 0; i < numRows; i++) {
 			for (int j = 0; j < numColumns; j++) {
-				if (board[i][j] == Gamelogic.NOT_DROPPED) {
+				switch (board[i][j]) {
+				case NOT_DROPPED:
 					continue;
-				} else if (board[i][j] == Gamelogic.YELLOW) {
+				
+				case YELLOW:
 					sum += evaluationTable[i][j];
-
-				} else if (board[i][j] == Gamelogic.RED) {
+					break;
+					
+				case RED:
 					sum -= evaluationTable[i][j];
+					break;
 				}
 			}
 		}
@@ -125,7 +131,7 @@ public class MinimaxBot extends Bot implements Runnable {
 		Thread thisThread = Thread.currentThread();
 		while (minimaxThread == thisThread) {
 			// early exit: current move is not the computers move
-			if (gamelogic.getCurrentPlayer() == Gamelogic.RED || nextMoveReady) {
+			if (gamelogic.getCurrentPlayer() == Boardstate.RED || nextMoveReady) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
@@ -143,7 +149,7 @@ public class MinimaxBot extends Bot implements Runnable {
 			System.out.println(" minmax found best move: " + bestMove);
 			System.out.println("  with evaluation score: " + maxEval);
 			System.out.println("            time needed: " + (endTime - startTime) + "ms");
-			System.out.println();
+			gamelogic.printBoard();
 			
 			// if minimax found that it will loose anyway, just pick the move with the best score for itself
 			if (maxEval == Double.NEGATIVE_INFINITY) {

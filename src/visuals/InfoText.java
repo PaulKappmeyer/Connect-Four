@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 import gamelogic.Game;
-import gamelogic.Gamelogic;
 import gamelogic.Main;
 
 public class InfoText {
@@ -38,12 +37,15 @@ public class InfoText {
 		graphics.drawString("Number of draws: " + game.getNumOfDraws(), 400, TEXT_Y1);
 		graphics.drawString("Number of games played: " + game.getNumOfGamesPlayed(), 550, TEXT_Y1);
 		switch (game.getCurrentPlayer()) {
-		case Gamelogic.YELLOW:
+		case NOT_DROPPED:
+			break;
+		
+		case YELLOW:
 			graphics.setColor(Color.ORANGE);
 			graphics.drawString("Current Player: Yellow", 750, TEXT_Y1);
 			break;
 
-		case Gamelogic.RED:
+		case RED:
 			graphics.setColor(Color.RED);
 			graphics.drawString("Current Player: Red", 750, TEXT_Y1);
 
@@ -51,15 +53,15 @@ public class InfoText {
 
 		graphics.setColor(Color.BLACK);
 		switch (game.getGamemode()) {
-		case Game.TWO_PLAYER_MODE:
+		case PLAYER_VS_PLAYER:
 			graphics.drawString("Current gamemode: player vs. player", 900, TEXT_Y1);
 			break;
 
-		case Game.AUTO_DROP_MODE:
+		case AUTO_DROP:
 			graphics.drawString("Current gamemode: automatic drop", 900, TEXT_Y1);
 			break;
 
-		case Game.SINGLEPLAYER_MODE:
+		case PLAYER_VS_COMPUTER:
 			graphics.drawString("Current gamemode: player vs. computer", 900, TEXT_Y1);
 			break;
 		}
