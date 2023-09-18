@@ -1,5 +1,7 @@
 package gamelogic;
 
+import java.util.HashMap;
+
 import gamelogic.Gamelogic.Boardstate;
 
 public class MinimaxBot extends Bot implements Runnable {
@@ -16,8 +18,12 @@ public class MinimaxBot extends Bot implements Runnable {
 	// moves in the middle of the board are more likely to be good -> search them first
 	private int[] columnSearchOrder = new int[] {3, 2, 4, 1, 5, 0, 6};
 	
+	// transposition table -> look up moves that have already been calculated
+	private HashMap<Long, Integer> transpositionTable;
+	
 	public MinimaxBot(Gamelogic gamelogic) {
 		this.gamelogic = gamelogic;
+		transpositionTable = new HashMap<Long, Integer>();
 	}
 	
 	public void initNewGame() {
@@ -69,14 +75,23 @@ public class MinimaxBot extends Bot implements Runnable {
 	
 	//here is where the evaluation is called
 	public int evaluatePosition(Gamelogic position) {
+		long hash = position.getBoardHash();
+		if (transpositionTable.containsKey(hash)) {
+			return transpositionTable.get(hash);
+		}
+		
 		if (position.didPlayerWin(Boardstate.YELLOW)) {
+			transpositionTable.put(hash, Integer.MAX_VALUE);
 			return Integer.MAX_VALUE;
 		} else if (position.didPlayerWin(Boardstate.RED)) {
+			transpositionTable.put(hash, Integer.MIN_VALUE);
 			return Integer.MIN_VALUE;
 		} else if (position.didGameEndInDraw()) {
+			transpositionTable.put(hash, 0);
 			return 0;
 		}
 
+		transpositionTable.put(hash, position.getBoardEvaluation());
 		return position.getBoardEvaluation();
 	}
 	

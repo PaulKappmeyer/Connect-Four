@@ -43,6 +43,10 @@ public class Gamelogic {
 			{3, 4, 5, 7, 5, 4, 3}};
 	private int positionEvaluation;
 	
+	private static final byte[] POWERS_OF_TWO = new byte[] {1, 2, 4, 8, 16, 32};
+	private long boardHash;
+	private final byte[] colHashes;
+	
 	public Gamelogic(int numRows, int numColumns, int numNeedForWin) {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
@@ -64,6 +68,7 @@ public class Gamelogic {
 		for (int i = 0; i < maxNumOfMoves; i++) {
 			moveHistory[i] = -1;
 		}
+		this.colHashes = new byte[numColumns];
 	}
 	
 	// copy constructor
@@ -88,6 +93,7 @@ public class Gamelogic {
 		this.winningRowIndices = gamelogic.getWinningRowIndices();
 		this.winningColIndices = gamelogic.getWinningColIndices();
 		this.moveHistory = gamelogic.getMoveHistory();
+		this.colHashes = gamelogic.colHashes.clone();
 	}
 	
 	public void initNewGame() {
@@ -100,6 +106,8 @@ public class Gamelogic {
 		for (int i = 0; i < numColumns; i++) {
 			possibleMoves[i] = true;
 			rowDropIndices[i] = numRows - 1;
+			colHashes[i] = 0;
+			boardHash = 0;
 		}
 		movesPlayed = 0;
 		gameEndedInWin = false;
@@ -126,9 +134,10 @@ public class Gamelogic {
 		// updated the board
 		board[rowIndex][columnIndex] = currentPlayer;
 		
-		// update evaluation
+		// update evaluation and hash
 		if (isStandardSize()) {
 			updateBoardEvaluation(rowIndex, columnIndex, currentPlayer);
+			updateBoardHash(rowIndex, columnIndex, currentPlayer);
 		}
 		
 		// decrement the row dropping index
@@ -170,9 +179,10 @@ public class Gamelogic {
 		int rowIndex = ++rowDropIndices[move];
 		possibleMoves[move] = true;
 		
-		// update evaluation
+		// update evaluation and hash
 		if (isStandardSize()) {
 			updateBoardEvaluation(rowIndex, move, Boardstate.NOT_DROPPED);
+			updateBoardHash(rowIndex, move, Boardstate.NOT_DROPPED);
 		}
 		
 		// updated the board
@@ -224,6 +234,43 @@ public class Gamelogic {
 	public int getBoardEvaluation() {
 		return positionEvaluation;
 	}	
+	
+	private void updateBoardHash(int rowIndex, int colIndex, Boardstate player) {
+		boardHash -= ((long) colHashes[colIndex]) << (7 * (numColumns - colIndex));
+		
+		switch (player) {
+		case NOT_DROPPED:
+			switch (board[rowIndex][colIndex]) {
+			case NOT_DROPPED:
+				break;
+			
+			case YELLOW:
+				colHashes[colIndex] -= 2 * POWERS_OF_TWO[numRows - 1 - rowIndex];
+				break;
+				
+			case RED:
+				colHashes[colIndex] -= 1 * POWERS_OF_TWO[numRows - 1 - rowIndex];
+				break;
+			}
+			
+			boardHash += ((long) colHashes[colIndex]) << (7 * (numColumns - colIndex));
+			return;
+			
+		case YELLOW:
+			colHashes[colIndex] += 2 * POWERS_OF_TWO[numRows - 1 - rowIndex];
+			break;
+		
+		case RED:
+			colHashes[colIndex] += 1 * POWERS_OF_TWO[numRows - 1 - rowIndex];
+			break;
+		}
+		
+		boardHash += ((long) colHashes[colIndex]) << (7 * (numColumns - colIndex));
+	}
+	
+	public long getBoardHash() {
+		return boardHash;
+	}
 
 	/**
 	 * Switches the current player.
