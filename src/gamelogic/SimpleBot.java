@@ -10,6 +10,11 @@ import java.util.Arrays;
 public class SimpleBot extends Bot {
 	
 	@Override
+	public boolean isNextMoveReady() {
+		return true;
+	}
+	
+	@Override
 	public int getNextMove(Gamelogic position) {
 		int[] rowDropIndices = position.getRowDropIndices();
 		Boardstate[][] board = position.getBoard();

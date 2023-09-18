@@ -190,10 +190,10 @@ public class Grid {
 		return false;
 	}
 
-	public void setState(int rowInd, int colInd, Boardstate state) {
-		coins[rowInd][colInd].setPlayerColor(state);
+	public void setState(int rowInd, int colInd, Boardstate player) {
+		coins[rowInd][colInd].setPlayerColor(player);
 
-		if (SHOW_ANIMATIONS) {
+		if (SHOW_ANIMATIONS && player != Boardstate.NOT_DROPPED) {
 			coins[rowInd][colInd].startDropAnimation(DROP_Y);
 		}
 	}

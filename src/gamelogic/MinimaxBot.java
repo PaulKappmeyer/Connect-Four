@@ -18,8 +18,10 @@ public class MinimaxBot extends Bot implements Runnable {
 	
 	private Gamelogic gamelogic;
 	
+	// multithreading 
 	private volatile Thread minimaxThread;
 	
+	// moves in the middle of the board are more likely to be good -> search them first
 	private int[] columnSearchOrder = new int[] {3, 2, 4, 1, 5, 0, 6};
 	
 	public MinimaxBot(Gamelogic gamelogic) {
@@ -73,7 +75,7 @@ public class MinimaxBot extends Bot implements Runnable {
 		}
 	}
 
-	//here is where the evaluation table is called
+	//here is where the evaluation is called
 	public double evaluatePosition(Gamelogic position) {
 		if (position.didPlayerWin(Boardstate.YELLOW)) {
 			return Double.POSITIVE_INFINITY;
@@ -117,9 +119,15 @@ public class MinimaxBot extends Bot implements Runnable {
 		return bestMove;
 	}
 	
+	@Override
+	public boolean isNextMoveReady() {
+		return nextMoveReady;
+	}
+	
 	public void start() {
 		minimaxThread = new Thread(this);
 		minimaxThread.start();
+		nextMoveReady = false;
 	}
 	
 	public void stop() {

@@ -3,11 +3,6 @@ package gamelogic;
 import java.util.Arrays;
 
 public class Gamelogic {
-
-	public enum BoardUpdateInfo {
-		INVALID_MOVE,
-		VALID_MOVE
-	}
 	
 	public enum Boardstate {
 		NOT_DROPPED,
@@ -15,13 +10,14 @@ public class Gamelogic {
 		YELLOW
 	}
 	
-	private int numRows;
-	private int numColumns;
-	private int numNeedForWin;
-	private Boardstate[][] board;
+	private final int numRows;
+	private final int numColumns;
+	private final int numNeedForWin;
+	private final Boardstate[][] board;
+	private final int maxNumOfMoves;
 	
-	private boolean[] possibleMoves;
-	private int[] rowDropIndices;
+	private final boolean[] possibleMoves;
+	private final int[] rowDropIndices;
 	
 	private int[] winningRowIndices;
 	private int[] winningColIndices;
@@ -29,15 +25,19 @@ public class Gamelogic {
 	private Boardstate currentPlayer;
 	private int movesPlayed;
 	
+	private final int[] moveHistory;
+	
 	private boolean gameEndedInWin;
 	private boolean gameEndedInDraw;
 	private Boardstate playerWon;
+	
 	
 	public Gamelogic(int numRows, int numColumns, int numNeedForWin) {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
 		this.numNeedForWin = numNeedForWin;
 		this.board = new Boardstate[numRows][numColumns];
+		this.maxNumOfMoves = numRows * numColumns;
 		this.possibleMoves = new boolean[numColumns];
 		this.rowDropIndices = new int[numColumns];
 		for (int i = 0; i < numColumns; i++) {
@@ -47,6 +47,10 @@ public class Gamelogic {
 		this.winningRowIndices = new int[numNeedForWin];
 		this.winningColIndices = new int[numNeedForWin];
 		this.currentPlayer = Boardstate.RED;
+		this.moveHistory = new int[maxNumOfMoves];
+		for (int i = 0; i < maxNumOfMoves; i++) {
+			moveHistory[i] = -1;
+		}
 	}
 	
 	// copy constructor
@@ -55,6 +59,7 @@ public class Gamelogic {
 		this.numColumns = gamelogic.getNumOfColumns();
 		this.numNeedForWin = gamelogic.getNumNeedForWin();
 		this.board = gamelogic.getBoard();
+		this.maxNumOfMoves = gamelogic.maxNumOfMoves;
 		this.possibleMoves = gamelogic.getPossibleMoves();
 		this.rowDropIndices = gamelogic.getRowDropIndices();
 		this.winningRowIndices = gamelogic.getWinningRowIndices();
@@ -64,6 +69,7 @@ public class Gamelogic {
 		this.gameEndedInDraw = gamelogic.didGameEndInDraw();
 		this.gameEndedInWin = gamelogic.didGameEndInWin();
 		this.playerWon = gamelogic.playerWon;
+		this.moveHistory = gamelogic.getMoveHistory();
 	}
 	
 	public void initNewGame() {
@@ -83,23 +89,26 @@ public class Gamelogic {
 		playerWon = Boardstate.NOT_DROPPED;
 	}
 	
-	public Object[] doMove(int columnIndex) {
+	// returns true if move is valid, false otherwise
+	public boolean doMove(int columnIndex) {
 		if (isPossibleMove(columnIndex) == false || gameEndedInWin || gameEndedInDraw) {
-			return new Object[]{BoardUpdateInfo.INVALID_MOVE}; 
+			return false;
 		}
 		
 		// get row index and construct return message with the information which grid position will be updated
 		int rowIndex = rowDropIndices[columnIndex];
-		Object[] gridUpdateInfo = new Object[] {BoardUpdateInfo.VALID_MOVE, rowIndex, columnIndex, currentPlayer};
+		
+		// keep track of the history
+		moveHistory[movesPlayed] = columnIndex;
 		
 		// increment number of moves played
 		movesPlayed++;
 		
-		// updated board
+		// updated the board
 		board[rowIndex][columnIndex] = currentPlayer;
 		
 		// decrement the row dropping index
-		rowDropIndices[columnIndex] --;
+		rowDropIndices[columnIndex]--;
 		if (rowDropIndices[columnIndex] < 0) {
 			possibleMoves[columnIndex] = false;
 		}
@@ -109,7 +118,7 @@ public class Gamelogic {
 			// switch current player
 			switchPlayer();
 
-			return gridUpdateInfo;
+			return true;
 		}
 		
 		// else check for win or draw:
@@ -118,7 +127,42 @@ public class Gamelogic {
 		// switch current player
 		switchPlayer();
 		
-		return gridUpdateInfo;
+		return true;
+	}
+	
+	public void undoLastMove() {
+		// set game to playing again:
+		gameEndedInWin = false;
+		gameEndedInDraw = false;
+		playerWon = Boardstate.NOT_DROPPED;
+		
+		// get the last move
+		int move = moveHistory[movesPlayed-1];
+		
+		// switch current player
+		switchPlayer();
+		
+		// increment the row dropping index
+		int rowIndex = ++rowDropIndices[move];
+		possibleMoves[move] = true;
+		
+		// updated the board
+		board[rowIndex][move] = Boardstate.NOT_DROPPED;
+		
+		// decrement the number of moves played
+		movesPlayed--;
+		
+		// update the history
+		moveHistory[movesPlayed] = -1;
+	}
+	
+	// returns columnIndex
+	public int getLastMove() {
+		return moveHistory[movesPlayed-1];
+	}
+	
+	public int[] getMoveHistory() {
+		return moveHistory.clone();
 	}
 	
 	/**
@@ -157,6 +201,13 @@ public class Gamelogic {
 	
 	public boolean[] getPossibleMoves() {
 		return possibleMoves.clone();
+	}
+	
+	public int getRowDropIndex(int columnIndex) {
+		if (columnIndex < 0 || columnIndex >= numColumns) {
+			return -1;
+		}
+		return rowDropIndices[columnIndex];
 	}
 	
 	public int[] getRowDropIndices() {

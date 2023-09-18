@@ -3,7 +3,6 @@ package gamelogic;
 import java.awt.Graphics;
 import java.util.Random;
 
-import gamelogic.Gamelogic.BoardUpdateInfo;
 import gamelogic.Gamelogic.Boardstate;
 import visuals.Grid;
 import visuals.InfoText;
@@ -103,10 +102,7 @@ public class Game {
 
 			case PLAYER_VS_COMPUTER:
 				if (gamelogic.getCurrentPlayer() == Boardstate.YELLOW) {
-					timeSinceLastDrop += tslf;
-					if (timeSinceLastDrop > dropTime) {
-						timeSinceLastDrop -= dropTime;
-
+					if (currentBot.isNextMoveReady()) {
 						doMove(currentBot.getNextMove(gamelogic));				
 					}
 				}
@@ -143,47 +139,46 @@ public class Game {
 			return;
 		}
 		
-		Object[] gridUpdateInfo = gamelogic.doMove(columnIndex);
-		switch ((BoardUpdateInfo) gridUpdateInfo[0]) {
-		case INVALID_MOVE:
-			return;
+		Boardstate currentPlayer = gamelogic.getCurrentPlayer();
+		boolean validMove = gamelogic.doMove(columnIndex);
+		if (validMove) {
+			// update visuals
+			int rowInd = gamelogic.getRowDropIndex(columnIndex) + 1;
 			
-		case VALID_MOVE:
-			// updated grid
-			int rowInd = (int) gridUpdateInfo[1]; 
-			int colInd = (int) gridUpdateInfo[2]; 
-			Boardstate currentPlayer = (Boardstate) gridUpdateInfo[3];
-			grid.setState(rowInd, colInd, currentPlayer);
+			grid.setState(rowInd, columnIndex, currentPlayer);
 			
 			// game won or draw?
-			if (gamelogic.didGameEndInWin()) {
+			if (gamelogic.didGameEnd()) {
 				gamestate = Gamestate.MATCH_ENDED;
-				// increment points
-				switch (gamelogic.getPlayerWon()) {
-				case NOT_DROPPED:
-					break;
 				
-				case RED:
-					redScore++;
-					break;
-
-				case YELLOW:
-					yellowScore++;
-					break;
+				if (gamelogic.didGameEndInWin()) {
+					// start animation
+					grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
 				}
-				// increment number of games played
-				numOfGamesPlayed++;
-				// start animation
-				grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
-			} else if (gamelogic.didGameEndInDraw()) {
-				gamestate = Gamestate.MATCH_ENDED;
-				// increment number of games played and number of draws
-				numOfGamesPlayed++;
-				numOfDraws++;
 			}
 		}
 	}
 
+	public void undoLastMove() {
+		if (gamestate == Gamestate.IN_RESET_ANIMATION || gamelogic.getNumOfMovesPlayed() <= 0) {
+			return;
+		}
+		
+//		// update state of game
+		gamestate = Gamestate.PLAYING;
+		
+		// save column index
+		int colInd = gamelogic.getLastMove();
+		
+		// undo move in logic
+		gamelogic.undoLastMove();
+		
+		// undo move in visuals
+		int rowInd = gamelogic.getRowDropIndex(colInd);
+		grid.setState(rowInd, colInd, Boardstate.NOT_DROPPED);
+		grid.stopBlinkAnimation();
+	}
+	
 	public boolean isReadyForReset() {
 		return gamestate == Gamestate.READY_FOR_RESET;
 	}
@@ -194,6 +189,26 @@ public class Game {
 	public void startResetAnimation() {
 		if (gamestate == Gamestate.IN_RESET_ANIMATION) {
 			return;
+		}
+		
+		// increment number of games played
+		numOfGamesPlayed++;
+		if (gamelogic.didGameEndInWin()) {
+			// increment points
+			switch (gamelogic.getPlayerWon()) {
+			case NOT_DROPPED:
+				break;
+			
+			case RED:
+				redScore++;
+				break;
+
+			case YELLOW:
+				yellowScore++;
+				break;
+			}
+		} else if (gamelogic.didGameEndInDraw()) {
+			numOfDraws++;
 		}
 
 		gamestate = Gamestate.IN_RESET_ANIMATION;

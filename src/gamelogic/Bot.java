@@ -6,6 +6,8 @@ public abstract class Bot {
 
 	private static final Random rand = new Random();
 	
+	public abstract boolean isNextMoveReady();
+	
 	public abstract int getNextMove(Gamelogic position);
 	
 	protected int getPossibleRandomMove(Gamelogic position) {

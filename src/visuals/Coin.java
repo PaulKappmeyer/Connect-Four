@@ -122,6 +122,7 @@ public class Coin {
 		switch (player) {
 		case NOT_DROPPED:
 			color = null;
+			animationState = AnimationState.HIDDEN;
 			break;
 		
 		case RED:

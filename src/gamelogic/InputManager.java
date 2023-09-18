@@ -5,6 +5,8 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
+import gamelogic.Gamelogic.Boardstate;
+
 public class InputManager implements KeyListener, MouseListener{
 
 	@Override
@@ -41,6 +43,25 @@ public class InputManager implements KeyListener, MouseListener{
 			System.exit(1);
 			break;
 
+		case KeyEvent.VK_Z:
+			switch (game.getGamemode()) {
+			case PLAYER_VS_PLAYER:
+				game.undoLastMove();
+				break;
+				
+			case PLAYER_VS_COMPUTER:
+				// if playing against the computer undo two moves, so red is playing again
+				if (game.getCurrentPlayer() == Boardstate.RED) {
+					game.undoLastMove();
+					game.undoLastMove();
+				}
+				break;
+				
+			case AUTO_DROP:
+				break;
+			}
+			break;
+			
 		case KeyEvent.VK_T:
 			game.toggleAutoDropMode();
 			break;

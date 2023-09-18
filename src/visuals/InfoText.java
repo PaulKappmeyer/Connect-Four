@@ -13,7 +13,7 @@ public class InfoText {
 	private static final int TEXT_Y3 = (int) (0.98 * Main.SCREEN_HEIGHT);
 	
 	private static final String INFO_TEXT2 = "Use mouseclicks or keys 0-9 to drop your tokens. Hit 'Enter' to start a new game. Press 'T' to toggle the automatic drop mode. Press 'S' to toggle the singleplayer mode and play against a (very bad) computer.";
-	private static final String INFO_TEXT3 = "Use the arrow keys to change the size of the board. Use the '+' and '-' key to change the number of tokens in a row required for a win."; 
+	private static final String INFO_TEXT3 = "Use the arrow keys to change the size of the board. Use the '+' and '-' key to change the number of tokens in a row required for a win. Press 'Z' to undo a move."; 
 	
 	private Game game;
 	
