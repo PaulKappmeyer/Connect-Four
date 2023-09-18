@@ -275,7 +275,7 @@ public class Gamelogic {
 	/**
 	 * Switches the current player.
 	 */
-	private void switchPlayer() {
+	public void switchPlayer() {
 		switch (currentPlayer) {
 		case NOT_DROPPED:
 			break;

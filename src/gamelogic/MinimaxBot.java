@@ -16,7 +16,7 @@ public class MinimaxBot extends Bot implements Runnable {
 	private volatile Thread minimaxThread;
 	
 	// moves in the middle of the board are more likely to be good -> search them first
-	private int[] columnSearchOrder = new int[] {3, 2, 4, 1, 5, 0, 6};
+	private static final int[] STANDARD_SEARCH_ORDER = new int[] {3, 2, 4, 1, 5, 0, 6};
 	
 	// transposition table -> look up moves that have already been calculated
 	private HashMap<Long, Integer> transpositionTable;
@@ -37,7 +37,7 @@ public class MinimaxBot extends Bot implements Runnable {
 
 		if (maximizingPlayer) {
 			int maxEval = Integer.MIN_VALUE;
-			for (int columnIndex : columnSearchOrder) {
+			for (int columnIndex : STANDARD_SEARCH_ORDER) {
 				// is valid move?
 				if (position.doMove(columnIndex) == false) {
 					continue;
@@ -59,7 +59,7 @@ public class MinimaxBot extends Bot implements Runnable {
 			return maxEval;
 		} else {
 			int minEval = Integer.MAX_VALUE;
-			for (int columnIndex : columnSearchOrder) {
+			for (int columnIndex : STANDARD_SEARCH_ORDER) {
 				// is valid move?
 				if (position.doMove(columnIndex) == false) {
 					continue;
@@ -119,6 +119,21 @@ public class MinimaxBot extends Bot implements Runnable {
 		minimaxThread = null;
 	}
 	
+	private int searchKillerMoves(Gamelogic position, Boardstate player) {
+		for (int columnIndex = 0; columnIndex < gamelogic.getNumOfColumns(); columnIndex++) {
+			// is valid move?
+			if (position.doMove(columnIndex) == false) {
+				continue;
+			}
+			if (position.didPlayerWin(player)) {
+				position.undoLastMove();
+				return columnIndex;
+			}
+			position.undoLastMove();
+		}
+		return -1;
+	}
+	
 	@Override
 	public void run() {
 		Thread thisThread = Thread.currentThread();
@@ -136,7 +151,26 @@ public class MinimaxBot extends Bot implements Runnable {
 			// search best move with minimax, minimax function updates bestMove
 			bestMove = -1;
 			long startTime = System.currentTimeMillis();
-			int maxEval = minimax(new Gamelogic(gamelogic), maxDepth, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
+			Gamelogic position = new Gamelogic(gamelogic);
+			
+			// search instantly winning moves for yellow
+			bestMove = searchKillerMoves(position, Boardstate.YELLOW);
+			if (bestMove != -1) {
+				nextMoveReady = true;
+				continue;
+			}
+			
+			// search instantly winning moves for red
+			position.switchPlayer();
+			bestMove = searchKillerMoves(position, Boardstate.RED);
+			position.switchPlayer();
+			if (bestMove != -1) {
+				nextMoveReady = true;
+				continue;
+			}
+			
+			// otherwise search with minimax
+			int maxEval = minimax(position, maxDepth, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
 			long endTime = System.currentTimeMillis();
 			
 			System.out.println(" minmax found best move: " + bestMove);
