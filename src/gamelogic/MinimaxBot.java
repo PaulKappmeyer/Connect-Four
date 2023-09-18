@@ -4,14 +4,6 @@ import gamelogic.Gamelogic.Boardstate;
 
 public class MinimaxBot extends Bot implements Runnable {
 
-	private static final int[][] evaluationTable = {
-			{3, 4, 5, 7, 5, 4, 3}, 
-			{4, 6, 8, 10, 8, 6, 4},
-			{5, 8, 11, 13, 11, 8, 5}, 
-			{5, 8, 11, 13, 11, 8, 5},
-			{4, 6, 8, 10, 8, 6, 4},
-			{3, 4, 5, 7, 5, 4, 3}};
-
 	private final int maxDepth = 11;
 	private int bestMove;
 	private boolean nextMoveReady;
@@ -32,20 +24,20 @@ public class MinimaxBot extends Bot implements Runnable {
 		nextMoveReady = false;
 	}
 	
-	public double minimax(Gamelogic position, int depth, double alpha, double beta, boolean maximizingPlayer) {
+	public int minimax(Gamelogic position, int depth, int alpha, int beta, boolean maximizingPlayer) {
 		if (depth == 0 || position.didGameEnd()) {
 			return evaluatePosition(position);
 		}
 
 		if (maximizingPlayer) {
-			double maxEval = Double.NEGATIVE_INFINITY;
+			int maxEval = Integer.MIN_VALUE;
 			for (int columnIndex : columnSearchOrder) {
-				if (position.isPossibleMove(columnIndex) == false) {
+				// is valid move?
+				if (position.doMove(columnIndex) == false) {
 					continue;
 				}
-				Gamelogic child = new Gamelogic(position);
-				child.doMove(columnIndex);
-				double eval = minimax(child, depth-1, alpha, beta, false);
+				int eval = minimax(position, depth-1, alpha, beta, false);
+				position.undoLastMove();
 //				maxEval = Math.max(maxEval, eval);			
 				if (eval > maxEval) {
 					maxEval = eval;
@@ -60,56 +52,34 @@ public class MinimaxBot extends Bot implements Runnable {
 			}
 			return maxEval;
 		} else {
-			double minEval = Double.POSITIVE_INFINITY;
+			int minEval = Integer.MAX_VALUE;
 			for (int columnIndex : columnSearchOrder) {
-				if (position.isPossibleMove(columnIndex) == false) {
+				// is valid move?
+				if (position.doMove(columnIndex) == false) {
 					continue;
 				}
-				Gamelogic child = new Gamelogic(position);
-				child.doMove(columnIndex);
-				double eval = minimax(child, depth-1, alpha, beta, true);
+				int eval = minimax(position, depth-1, alpha, beta, true);
+				position.undoLastMove();
 				minEval = Math.min(minEval, eval);
 				beta = Math.min(beta, eval);
 			}
 			return minEval;
 		}
 	}
-
+	
 	//here is where the evaluation is called
-	public double evaluatePosition(Gamelogic position) {
+	public int evaluatePosition(Gamelogic position) {
 		if (position.didPlayerWin(Boardstate.YELLOW)) {
-			return Double.POSITIVE_INFINITY;
+			return Integer.MAX_VALUE;
 		} else if (position.didPlayerWin(Boardstate.RED)) {
-			return Double.NEGATIVE_INFINITY;
+			return Integer.MIN_VALUE;
 		} else if (position.didGameEndInDraw()) {
 			return 0;
 		}
 
-		
-		int utility = 138;
-		double sum = 0;
-		Boardstate[][] board = position.getBoard();
-		int numRows = board.length;
-		int numColumns = board[0].length;
-		for (int i = 0; i < numRows; i++) {
-			for (int j = 0; j < numColumns; j++) {
-				switch (board[i][j]) {
-				case NOT_DROPPED:
-					continue;
-				
-				case YELLOW:
-					sum += evaluationTable[i][j];
-					break;
-					
-				case RED:
-					sum -= evaluationTable[i][j];
-					break;
-				}
-			}
-		}
-		return utility + sum;
+		return position.getBoardEvaluation();
 	}
-
+	
 	@Override
 	public int getNextMove(Gamelogic position) {
 		if (nextMoveReady == false) {
@@ -151,7 +121,7 @@ public class MinimaxBot extends Bot implements Runnable {
 			// search best move with minimax, minimax function updates bestMove
 			bestMove = -1;
 			long startTime = System.currentTimeMillis();
-			double maxEval = minimax(gamelogic, maxDepth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
+			int maxEval = minimax(new Gamelogic(gamelogic), maxDepth, Integer.MIN_VALUE, Integer.MAX_VALUE, true);
 			long endTime = System.currentTimeMillis();
 			
 			System.out.println(" minmax found best move: " + bestMove);
@@ -160,7 +130,7 @@ public class MinimaxBot extends Bot implements Runnable {
 			gamelogic.printBoard();
 			
 			// if minimax found that it will loose anyway, just pick the move with the best score for itself
-			if (maxEval == Double.NEGATIVE_INFINITY) {
+			if (maxEval == Integer.MIN_VALUE) {
 				System.out.println("minimax ran into a trap...");
 				bestMove = getPossibleRandomMove(gamelogic);
 			}

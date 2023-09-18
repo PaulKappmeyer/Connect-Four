@@ -15,6 +15,7 @@ public class Gamelogic {
 	private final int numNeedForWin;
 	private final Boardstate[][] board;
 	private final int maxNumOfMoves;
+	private final boolean isStandardSize;
 	
 	private final boolean[] possibleMoves;
 	private final int[] rowDropIndices;
@@ -31,13 +32,25 @@ public class Gamelogic {
 	private boolean gameEndedInDraw;
 	private Boardstate playerWon;
 	
+	// used for minimax
+	private static final int EVALUATION_UTILITY = 138;
+	private static final int[][] evaluationTable = {
+			{3, 4, 5, 7, 5, 4, 3}, 
+			{4, 6, 8, 10, 8, 6, 4},
+			{5, 8, 11, 13, 11, 8, 5}, 
+			{5, 8, 11, 13, 11, 8, 5},
+			{4, 6, 8, 10, 8, 6, 4},
+			{3, 4, 5, 7, 5, 4, 3}};
+	private int positionEvaluation;
 	
 	public Gamelogic(int numRows, int numColumns, int numNeedForWin) {
 		this.numRows = numRows;
 		this.numColumns = numColumns;
+		this.isStandardSize = numRows == Main.STANDARD_NUM_ROWS && numColumns == Main.STANDARD_NUM_COLUMNS;
 		this.numNeedForWin = numNeedForWin;
-		this.board = new Boardstate[numRows][numColumns];
 		this.maxNumOfMoves = numRows * numColumns;
+		
+		this.board = new Boardstate[numRows][numColumns];
 		this.possibleMoves = new boolean[numColumns];
 		this.rowDropIndices = new int[numColumns];
 		for (int i = 0; i < numColumns; i++) {
@@ -55,20 +68,25 @@ public class Gamelogic {
 	
 	// copy constructor
 	public Gamelogic(Gamelogic gamelogic) {
-		this.numRows = gamelogic.getNumOfRows();
-		this.numColumns = gamelogic.getNumOfColumns();
-		this.numNeedForWin = gamelogic.getNumNeedForWin();
-		this.board = gamelogic.getBoard();
+		// primitive types
+		this.numRows = gamelogic.numRows;
+		this.numColumns = gamelogic.numColumns;
+		this.isStandardSize = gamelogic.isStandardSize;
+		this.numNeedForWin = gamelogic.numNeedForWin;
 		this.maxNumOfMoves = gamelogic.maxNumOfMoves;
+		this.movesPlayed = gamelogic.movesPlayed;
+		this.currentPlayer = gamelogic.currentPlayer;
+		this.playerWon = gamelogic.playerWon;
+		this.gameEndedInDraw = gamelogic.gameEndedInDraw;
+		this.gameEndedInWin = gamelogic.gameEndedInWin;
+		this.positionEvaluation = gamelogic.positionEvaluation;
+		
+		// object types -> need copying
+		this.board = gamelogic.getBoard();
 		this.possibleMoves = gamelogic.getPossibleMoves();
 		this.rowDropIndices = gamelogic.getRowDropIndices();
 		this.winningRowIndices = gamelogic.getWinningRowIndices();
 		this.winningColIndices = gamelogic.getWinningColIndices();
-		this.currentPlayer = gamelogic.getCurrentPlayer();
-		this.movesPlayed = gamelogic.getNumOfMovesPlayed();
-		this.gameEndedInDraw = gamelogic.didGameEndInDraw();
-		this.gameEndedInWin = gamelogic.didGameEndInWin();
-		this.playerWon = gamelogic.playerWon;
 		this.moveHistory = gamelogic.getMoveHistory();
 	}
 	
@@ -87,6 +105,7 @@ public class Gamelogic {
 		gameEndedInWin = false;
 		gameEndedInDraw = false;
 		playerWon = Boardstate.NOT_DROPPED;
+		positionEvaluation = EVALUATION_UTILITY;
 	}
 	
 	// returns true if move is valid, false otherwise
@@ -106,6 +125,11 @@ public class Gamelogic {
 		
 		// updated the board
 		board[rowIndex][columnIndex] = currentPlayer;
+		
+		// update evaluation
+		if (isStandardSize()) {
+			updateBoardEvaluation(rowIndex, columnIndex, currentPlayer);
+		}
 		
 		// decrement the row dropping index
 		rowDropIndices[columnIndex]--;
@@ -146,6 +170,11 @@ public class Gamelogic {
 		int rowIndex = ++rowDropIndices[move];
 		possibleMoves[move] = true;
 		
+		// update evaluation
+		if (isStandardSize()) {
+			updateBoardEvaluation(rowIndex, move, Boardstate.NOT_DROPPED);
+		}
+		
 		// updated the board
 		board[rowIndex][move] = Boardstate.NOT_DROPPED;
 		
@@ -165,6 +194,37 @@ public class Gamelogic {
 		return moveHistory.clone();
 	}
 	
+	private void updateBoardEvaluation(int rowIndex, int colIndex, Boardstate player) {
+		switch (player) {
+		case NOT_DROPPED:
+			switch (board[rowIndex][colIndex]) {
+			case NOT_DROPPED:
+				break;
+			
+			case YELLOW:
+				positionEvaluation -= evaluationTable[rowIndex][colIndex];
+				break;
+				
+			case RED:
+				positionEvaluation += evaluationTable[rowIndex][colIndex];
+				break;
+			}
+			break;
+		
+		case YELLOW:
+			positionEvaluation += evaluationTable[rowIndex][colIndex];
+			break;
+			
+		case RED:
+			positionEvaluation -= evaluationTable[rowIndex][colIndex];
+			break;
+		}
+	}
+	
+	public int getBoardEvaluation() {
+		return positionEvaluation;
+	}	
+
 	/**
 	 * Switches the current player.
 	 */
@@ -193,7 +253,7 @@ public class Gamelogic {
 			// set blink animation indices
 			winningRowIndices = (int[]) checkForWinInfo[1];
 			winningColIndices = (int[]) checkForWinInfo[2];
-		} else if (movesPlayed == numColumns * numRows) { // check for draw
+		} else if (movesPlayed == maxNumOfMoves) { // check for draw
 			// set game finished
 			gameEndedInDraw = true;
 		}
@@ -219,6 +279,10 @@ public class Gamelogic {
 			return false;
 		}
 		return possibleMoves[columnIndex];
+	}
+	
+	public boolean isStandardSize() {
+		return isStandardSize;
 	}
 	
 	public static Object[] checkForWin(Boardstate[][] board, Boardstate player, int numNeedForWin) {

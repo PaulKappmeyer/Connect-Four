@@ -10,7 +10,7 @@ import visuals.InfoText;
 public class Game {
 
 	private static final Random rand = new Random();
-	
+
 	public enum Gamemode {
 		PLAYER_VS_PLAYER,
 		PLAYER_VS_COMPUTER,
@@ -18,7 +18,7 @@ public class Game {
 	}
 
 	private Gamemode gamemode;
-	
+
 	private enum Gamestate {
 		PLAYING,
 		MATCH_ENDED,
@@ -34,30 +34,30 @@ public class Game {
 	private SimpleBot simpleBot;
 	private Grid grid;
 	private InfoText infoText;
-	
+
 	private int numOfGamesPlayed;
 	private int numOfDraws;
 	private int redScore;
 	private int yellowScore;
-	
+
 	// used for auto drop mode
 	private double timeSinceLastDrop;
 	private final double dropTime = 0.075;
 
-	
+
 	public Game(int numRows, int numColumns, int numNeedForWin) {
 		gamelogic = new Gamelogic(numRows, numColumns, numNeedForWin);
 		gamemode = Gamemode.PLAYER_VS_PLAYER;
 		gamestate = Gamestate.PLAYING;
-		
+
 		// visuals
 		grid = new Grid(numRows, numColumns, numNeedForWin);
 		infoText = new InfoText(this);
-		
+
 		// computer AI
 		minimaxBot = new MinimaxBot(gamelogic);
 		simpleBot = new SimpleBot();
-		
+
 		initNewGame();
 	}
 
@@ -80,7 +80,7 @@ public class Game {
 
 	public void update(double tslf) {
 		grid.update(tslf);
-		
+
 		switch (gamestate) {
 		case PLAYING:
 			switch (gamemode) {
@@ -96,14 +96,14 @@ public class Game {
 					while (gamelogic.isPossibleMove(columnIndex) == false) {
 						columnIndex = rand.nextInt(gamelogic.getNumOfColumns());
 					}
-					doMove(columnIndex);
+					doMove(columnIndex, false);
 				}
 				break;
 
 			case PLAYER_VS_COMPUTER:
 				if (gamelogic.getCurrentPlayer() == Boardstate.YELLOW) {
 					if (currentBot.isNextMoveReady()) {
-						doMove(currentBot.getNextMove(gamelogic));				
+						doMove(currentBot.getNextMove(gamelogic), false);				
 					}
 				}
 				break;
@@ -120,7 +120,7 @@ public class Game {
 			switch (gamemode) {
 			case AUTO_DROP:
 				startResetAnimation();
-				
+
 			default:
 				break;
 			}
@@ -134,51 +134,57 @@ public class Game {
 		}
 	}
 
-	public void doMove(int columnIndex) {
+	public void doMove(int columnIndex, boolean humanInput) {
 		if (gamestate != Gamestate.PLAYING) {
 			return;
 		}
-		
+		if (gamemode == Gamemode.PLAYER_VS_COMPUTER && humanInput && gamelogic.getCurrentPlayer() == Boardstate.YELLOW) {
+			return;
+		}
+
 		Boardstate currentPlayer = gamelogic.getCurrentPlayer();
 		boolean validMove = gamelogic.doMove(columnIndex);
-		if (validMove) {
-			// update visuals
-			int rowInd = gamelogic.getRowDropIndex(columnIndex) + 1;
-			
-			grid.setState(rowInd, columnIndex, currentPlayer);
-			
-			// game won or draw?
-			if (gamelogic.didGameEnd()) {
-				gamestate = Gamestate.MATCH_ENDED;
-				
-				if (gamelogic.didGameEndInWin()) {
-					// start animation
-					grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
-				}
+		if (validMove == false) {
+			return;
+		}
+
+		// update visuals
+		int rowInd = gamelogic.getRowDropIndex(columnIndex) + 1;
+
+		grid.setState(rowInd, columnIndex, currentPlayer);
+
+		// game won or draw?
+		if (gamelogic.didGameEnd()) {
+			gamestate = Gamestate.MATCH_ENDED;
+
+			if (gamelogic.didGameEndInWin()) {
+				// start animation
+				grid.startBlinkAnimation(gamelogic.getWinningRowIndices(), gamelogic.getWinningColIndices());
 			}
 		}
+
 	}
 
 	public void undoLastMove() {
 		if (gamestate == Gamestate.IN_RESET_ANIMATION || gamelogic.getNumOfMovesPlayed() <= 0) {
 			return;
 		}
-		
-//		// update state of game
+
+		//		// update state of game
 		gamestate = Gamestate.PLAYING;
-		
+
 		// save column index
 		int colInd = gamelogic.getLastMove();
-		
+
 		// undo move in logic
 		gamelogic.undoLastMove();
-		
+
 		// undo move in visuals
 		int rowInd = gamelogic.getRowDropIndex(colInd);
 		grid.setState(rowInd, colInd, Boardstate.NOT_DROPPED);
 		grid.stopBlinkAnimation();
 	}
-	
+
 	public boolean isReadyForReset() {
 		return gamestate == Gamestate.READY_FOR_RESET;
 	}
@@ -190,7 +196,7 @@ public class Game {
 		if (gamestate == Gamestate.IN_RESET_ANIMATION) {
 			return;
 		}
-		
+
 		// increment number of games played
 		numOfGamesPlayed++;
 		if (gamelogic.didGameEndInWin()) {
@@ -198,7 +204,7 @@ public class Game {
 			switch (gamelogic.getPlayerWon()) {
 			case NOT_DROPPED:
 				break;
-			
+
 			case RED:
 				redScore++;
 				break;
@@ -228,10 +234,10 @@ public class Game {
 			gamemode = Gamemode.PLAYER_VS_PLAYER;
 			minimaxBot.stop();
 			currentBot = null;
-			
+
 		} else {
 			gamemode = Gamemode.PLAYER_VS_COMPUTER;
-			
+
 			// minimax bot is atm only implemented for the standard 6x7-grid
 			if (gamelogic.getNumOfRows() <= Main.STANDARD_NUM_ROWS && gamelogic.getNumOfColumns() <= Main.STANDARD_NUM_COLUMNS) {
 				minimaxBot.start();
@@ -241,11 +247,11 @@ public class Game {
 			}
 		}
 	}
-	
+
 	public int mouseXToColumnIndex(int mouseX) {
 		return grid.mouseXToColumnIndex(mouseX);
 	}
-	
+
 	public Gamemode getGamemode() {
 		return gamemode;
 	}
@@ -253,7 +259,7 @@ public class Game {
 	public Boardstate getCurrentPlayer() {
 		return gamelogic.getCurrentPlayer();
 	}
-	
+
 	public int getRedScore() {
 		return redScore;
 	}
@@ -269,7 +275,7 @@ public class Game {
 	public int getNumOfGamesPlayed() {
 		return numOfGamesPlayed;
 	}
-	
+
 	public int getNumOfMovesPlayed() {
 		return gamelogic.getNumOfMovesPlayed();
 	}
